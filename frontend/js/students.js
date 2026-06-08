@@ -1,4 +1,3 @@
-// FIX: dùng requireAuth() từ api.js thay vì kiểm tra localStorage trực tiếp
 requireAuth();
 
 const usernameEl = document.getElementById("usernameDisplay");
@@ -8,7 +7,6 @@ let allStudents = [];
 
 async function loadStudents() {
   try {
-    // FIX: dùng apiFetch (tự gắn token, tự xử lý 401)
     const res = await apiFetch("/students");
     if (!res.ok) {
       showError("Không tải được danh sách học sinh (lỗi " + res.status + ")");
@@ -36,7 +34,6 @@ function showError(msg) {
   }
 }
 
-// FIX: escape HTML để tránh XSS khi render dữ liệu từ server
 function escapeHtml(str) {
   if (str == null) return "";
   return String(str)
@@ -66,25 +63,24 @@ function renderTable(students) {
       <td style="font-size:13px">${escapeHtml(s.parent_phone) || "—"}</td>
       <td>
         <div class="action-btns">
-          <button class="btn-sm btn-ghost"   onclick="openEdit(${s.id})"><i class="fa-solid fa-pen"></i></button>
-          <button class="btn-sm btn-danger"  onclick="deleteStudent(${s.id})"><i class="fa-solid fa-trash"></i></button>
+          <button class="btn-sm btn-ghost"  onclick="openEdit(${s.id})"><i class="fa-solid fa-pen"></i></button>
+          <button class="btn-sm btn-danger" onclick="deleteStudent(${s.id})"><i class="fa-solid fa-trash"></i></button>
         </div>
       </td>
     </tr>
   `,
     )
     .join("");
-    // FIX: bỏ '${s.full_name}' trong onclick — tên có dấu ' sẽ break JS
-    // Thay bằng truyền id rồi tra tên từ allStudents trong hàm deleteStudent
 }
 
 function filterStudents() {
   const q = document.getElementById("searchInput").value.toLowerCase();
+  // FIX: thêm || "" để tránh crash TypeError khi field là null/undefined
   const filtered = allStudents.filter(
     (s) =>
-      s.full_name.toLowerCase().includes(q) ||
-      s.student_code.toLowerCase().includes(q) ||
-      s.class_name.toLowerCase().includes(q),
+      (s.full_name    || "").toLowerCase().includes(q) ||
+      (s.student_code || "").toLowerCase().includes(q) ||
+      (s.class_name   || "").toLowerCase().includes(q),
   );
   renderTable(filtered);
 }
@@ -116,13 +112,15 @@ function closeModal() {
   document.getElementById("studentModal").classList.remove("open");
 }
 
+// FIX: đổi tên hàm thành saveStudent để khớp với onclick trong students.html
+// (HTML đang gọi createStudent() — cần cập nhật HTML hoặc đặt alias)
 async function saveStudent() {
   const id   = document.getElementById("editingId").value;
   const body = {
     student_code: document.getElementById("studentCode").value.trim(),
     full_name:    document.getElementById("fullName").value.trim(),
     class_name:   document.getElementById("className").value.trim(),
-    face_label:   document.getElementById("faceLabel").value.trim(),
+    face_label:   document.getElementById("faceLabel").value.trim() || null,
     phone:        document.getElementById("phone").value.trim(),
     parent_phone: document.getElementById("parentPhone").value.trim(),
   };
@@ -141,7 +139,6 @@ async function saveStudent() {
       body: JSON.stringify(body),
     });
 
-    // FIX: kiểm tra HTTP status code thay vì chỉ đọc data.error
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       alert(err.detail || "Lỗi khi lưu học sinh");
@@ -155,8 +152,10 @@ async function saveStudent() {
   }
 }
 
+// Alias để tương thích với nút "Lưu học sinh" trong students.html đang gọi createStudent()
+const createStudent = saveStudent;
+
 async function deleteStudent(id) {
-  // FIX: lấy tên từ allStudents thay vì nhận trong tham số (tránh XSS)
   const s = allStudents.find((x) => x.id === id);
   const name = s ? s.full_name : `ID ${id}`;
 
@@ -165,7 +164,6 @@ async function deleteStudent(id) {
   try {
     const res = await apiFetch(`/students/${id}`, { method: "DELETE" });
 
-    // FIX: kiểm tra kết quả xóa trước khi reload
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       alert(err.detail || "Xóa thất bại");

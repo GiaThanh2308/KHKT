@@ -1,16 +1,18 @@
-from fastapi import FastAPI, UploadFile, File, Form, Depends, HTTPException
+from contextlib import asynccontextmanager
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 from sqlalchemy import func
 from datetime import datetime, timedelta, timezone
-from typing import Optional
+from typing import Optional, Annotated
 import numpy as np
 import cv2
 import os
 import re
 import httpx
 from dotenv import load_dotenv
+from pydantic import BaseModel
 
 load_dotenv()
 
@@ -20,21 +22,31 @@ from backend.schemas.student import (
     StudentCreate, StudentUpdate, ViolationCreate,
     ChatMessage, ChatRequest
 )
-# FIX: import auth module
 from backend.auth import (
     hash_password, verify_password,
     create_access_token, get_current_user, require_admin
 )
 from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 
-app = FastAPI(title="AI School API")
+# FIX: dùng lifespan thay @app.on_event("startup") đã deprecated
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    print("🚀 Loading face recognition model...")
+    system.faiss_index.build_index(
+        system.database.known_encodings,
+        system.database.known_names
+    )
+    print("✅ Model loaded")
+    yield  # app chạy ở đây
+    # shutdown logic nếu cần đặt sau yield
 
-# FIX: CORS — chỉ cho phép origin cụ thể, không dùng * với credentials
+app = FastAPI(title="AI School API", lifespan=lifespan)
+
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://127.0.0.1:5500,http://localhost:5500").split(",")
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,   # FIX: không dùng ["*"] khi có credentials
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -42,8 +54,6 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-# FIX: chỉ khởi tạo 1 lần, không gọi load_database() trong constructor nữa
-# (constructor FaceDatabase tự gọi load rồi, startup event sẽ build index)
 system = AdvancedFaceRecognitionSystem()
 
 _ocr_reader = None
@@ -65,24 +75,13 @@ def get_db():
         db.close()
 
 
-@app.on_event("startup")
-def load_model():
-    print("🚀 Loading face recognition model...")
-    # FIX: database đã được load trong FaceDatabase.__init__, chỉ cần build index
-    system.faiss_index.build_index(
-        system.database.known_encodings,
-        system.database.known_names
-    )
-    print("✅ Model loaded")
-
-
 # ─── FACE RECOGNITION ────────────────────────────────────────
 
 @app.post("/recognize-face")
 async def recognize_face(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)   # FIX: yêu cầu đăng nhập
+    current_user: dict = Depends(get_current_user)
 ):
     contents = await file.read()
     np_arr = np.frombuffer(contents, np.uint8)
@@ -143,7 +142,7 @@ def preprocess_plate(img: np.ndarray) -> np.ndarray:
 async def recognize_plate(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)   # FIX: yêu cầu đăng nhập
+    current_user: dict = Depends(get_current_user)
 ):
     contents = await file.read()
     np_arr = np.frombuffer(contents, np.uint8)
@@ -163,8 +162,8 @@ async def recognize_plate(
         return {"plate_number": None, "student": None, "message": "Không đọc được biển số"}
 
     results.sort(key=lambda x: x[2], reverse=True)
-    raw_texts  = [r[1] for r in results[:3]]
-    raw_plate  = " ".join(raw_texts)
+    raw_texts   = [r[1] for r in results[:3]]
+    raw_plate   = " ".join(raw_texts)
     plate_clean = clean_plate(raw_plate)
 
     if len(plate_clean) < 5:
@@ -210,7 +209,7 @@ async def recognize_plate(
 @app.get("/students")
 def get_students(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)   # FIX: yêu cầu đăng nhập
+    current_user: dict = Depends(get_current_user)
 ):
     students = db.query(Student).all()
     return [
@@ -259,10 +258,8 @@ def create_student(
     if existing:
         raise HTTPException(status_code=400, detail="Mã học sinh đã tồn tại")
 
-    # FIX: face_label rỗng → lưu None để tránh unique constraint lỗi
-    face_label = student.face_label.strip() or None
+    face_label = (student.face_label or "").strip() or None
 
-    # FIX: kiểm tra face_label trùng nếu có giá trị
     if face_label:
         dup = db.query(Student).filter(Student.face_label == face_label).first()
         if dup:
@@ -301,7 +298,6 @@ def update_student(
     if student.parent_phone is not None: db_student.parent_phone = student.parent_phone
     if student.plate_number is not None: db_student.plate_number = student.plate_number
 
-    # FIX: face_label rỗng → None
     if student.face_label is not None:
         face_label = student.face_label.strip() or None
         if face_label:
@@ -358,7 +354,8 @@ def create_violation(
 @app.get("/violations")
 def get_violations(
     student_id: Optional[int] = None,
-    limit: int = 50,
+    # FIX: giới hạn tối đa 200 — tránh client dump toàn bộ DB gây DoS
+    limit: Annotated[int, Body(ge=1, le=200)] = 50,
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -376,6 +373,7 @@ def get_violations(
             "class_name":     v.student.class_name   if v.student else "",
             "violation_type": v.violation_type,
             "note":           v.note,
+            "image_path":     v.image_path,   # FIX: thêm trường bị thiếu
             "created_at":     v.created_at.isoformat(),
         }
         for v in violations
@@ -447,7 +445,7 @@ def get_top_violators(
     ).join(Violation, Student.id == Violation.student_id)\
      .group_by(Student.id)\
      .order_by(func.count(Violation.id).desc())\
-     .limit(limit).all()
+     .limit(min(limit, 50)).all()   # FIX: giới hạn tối đa 50
 
     return [
         {"full_name": r.full_name, "class_name": r.class_name,
@@ -463,13 +461,8 @@ def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     db: Session = Depends(get_db)
 ):
-    """
-    FIX: dùng OAuth2PasswordRequestForm chuẩn, verify bcrypt hash,
-    trả về JWT access_token thay vì chỉ {success: true}.
-    """
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
-        # FIX: trả về 401 thay vì 200 khi sai mật khẩu
         raise HTTPException(
             status_code=401,
             detail="Sai tài khoản hoặc mật khẩu",
@@ -485,21 +478,23 @@ def login(
     }
 
 
-# FIX: bảo vệ /create-user — chỉ admin mới tạo được user
+# FIX: dùng Pydantic body thay query params — tránh lộ password qua URL/log
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "teacher"
+
 @app.post("/create-user")
 def create_user(
-    username: str,
-    password: str,
-    role: str = "teacher",
+    body: CreateUserRequest,
     db: Session = Depends(get_db),
-    _admin: dict = Depends(require_admin)   # FIX: chỉ admin
+    _admin: dict = Depends(require_admin)
 ):
-    existing = db.query(User).filter(User.username == username).first()
+    existing = db.query(User).filter(User.username == body.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username đã tồn tại")
 
-    # FIX: hash mật khẩu trước khi lưu
-    user = User(username=username, hashed_password=hash_password(password), role=role)
+    user = User(username=body.username, hashed_password=hash_password(body.password), role=body.role)
     db.add(user)
     db.commit()
     return {"message": "User created"}
@@ -511,7 +506,7 @@ def create_user(
 async def chatbot(
     req: ChatRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)   # FIX: yêu cầu đăng nhập
+    current_user: dict = Depends(get_current_user)
 ):
     api_key = os.getenv("GEMINI_API_KEY")
     if not api_key:
