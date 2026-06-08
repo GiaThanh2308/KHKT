@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Student Management</title>
+
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/dashboard.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+  </head>
+
+  <body>
+    <div class="layout">
+      <!-- Sidebar -->
+
+      <aside class="sidebar">
+        <div class="logo">
+          <i class="fa-solid fa-school"></i>
+
+          <span>AI School</span>
+        </div>
+
+        <ul class="menu">
+          <li>
+            <i class="fa-solid fa-chart-line"></i>
+            Dashboard
+          </li>
+
+          <li>
+            <i class="fa-solid fa-user-graduate"></i>
+            Học sinh
+          </li>
+
+          <li class="active">
+            <i class="fa-solid fa-camera"></i>
+            Nhận diện khuôn mặt
+          </li>
+
+          <li>
+            <i class="fa-solid fa-car"></i>
+            Nhận diện biển số
+          </li>
+
+          <li>
+            <i class="fa-solid fa-robot"></i>
+            Chatbot AI
+          </li>
+
+          <li>
+            <i class="fa-solid fa-user"></i>
+            Đăng nhập
+          </li>
+        </ul>
+      </aside>
+
+      <!-- Main -->
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <h1>Nhận diện khuôn mặt</h1>
+
+            <p>Hệ thống AI quản lý học sinh</p>
+          </div>
+
+          <div class="user-box">
+            <i class="fa-solid fa-user-circle"></i>
+          </div>
+        </header>
+
+        <!-- Stats -->
+
+        <section class="stats">
+          <div class="stat-card student">
+            <div class="card-header">
+              <span>Tổng học sinh</span>
+
+              <i class="fa-solid fa-user-graduate"></i>
+            </div>
+
+            <h2>0</h2>
+          </div>
+
+          <div class="stat-card face">
+            <div class="card-header">
+              <span>Khuôn mặt đã lưu</span>
+
+              <i class="fa-solid fa-face-smile"></i>
+            </div>
+
+            <h2>0</h2>
+          </div>
+
+          <div class="stat-card plate">
+            <div class="card-header">
+              <span>Biển số xe</span>
+
+              <i class="fa-solid fa-car"></i>
+            </div>
+
+            <h2>0</h2>
+          </div>
+        </section>
+
+        <!-- Camera + Result -->
+
+        <section class="content-row">
+          <!-- Camera -->
+
+          <div class="camera-card">
+            <h2>Camera</h2>
+
+            <div class="camera-wrapper">
+              <div id="cameraPlaceholder">
+                <i class="fa-solid fa-camera"></i>
+
+                <p>Camera đang tắt</p>
+
+                <small> Nhấn nút "Bật Camera" để bắt đầu </small>
+              </div>
+
+              <video id="video" autoplay playsinline></video>
+            </div>
+
+            <div class="button-group">
+              <button onclick="startCamera()">Bật Camera</button>
+
+              <button onclick="captureAndRecognize()">Nhận diện</button>
+            </div>
+
+            <div class="upload-section">
+
+            <input type="file" id="imageInput" />
+
+            <button onclick="uploadImage()">
+              Upload ảnh
+            </button>
+
+          </div>
+
+            <canvas id="canvas" width="640" height="480" style="display: none">
+            </canvas>
+          </div>
+
+          <!-- Result -->
+
+          <div class="result-card">
+            <div class="result-header">
+              <h2>Kết quả nhận diện</h2>
+            </div>
+
+            <div id="studentProfile">
+
+              <div class="empty-profile">
+
+                <i class="fa-solid fa-user"></i>
+
+                <p>Chưa nhận diện học sinh</p>
+
+                <small>
+                  AI sẽ hiển thị thông tin học sinh ở đây
+                </small>
+
+              </div>
+
+            </div>
+
+          </div>
+            <h2>Kết quả</h2>
+
+            <div id="studentProfile">
+
+              <div class="empty-profile">
+                <i class="fa-solid fa-user"></i>
+
+                <p>Chưa nhận diện học sinh</p>
+              </div>
+
+</div>
+          </div>
+        </section>
+      </main>
+      </div>
+      <nav class="mobile-nav">
+        <div class="mobile-item active">
+          <i class="fa-solid fa-camera"></i>
+          <span>Face</span>
+        </div>
+
+        <div class="mobile-item">
+          <i class="fa-solid fa-car"></i>
+          <span>Plate</span>
+        </div>
+
+        <div class="mobile-item">
+          <i class="fa-solid fa-robot"></i>
+          <span>AI</span>
+        </div>
+
+        <div class="mobile-item">
+          <i class="fa-solid fa-user"></i>
+          <span>Profile</span>
+        </div>
+      </nav>
+    </div>
+
+    <script src="js/face.js"></script>
+  </body>
+</html>
