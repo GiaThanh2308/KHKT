@@ -5,14 +5,18 @@ Cài đặt thêm: pip install passlib[bcrypt] python-jose[cryptography]
 import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional
-
+from dotenv import load_dotenv
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-
+load_dotenv()
 # ── Cấu hình ──────────────────────────────────────────────────
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "CHANGE_THIS_SECRET_IN_ENV")  # đặt trong .env!
+if SECRET_KEY == "CHANGE_THIS_SECRET_IN_ENV":
+    raise RuntimeError(
+        "JWT_SECRET_KEY chưa được cấu hình trong .env"
+    )
 ALGORITHM  = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 60 * 8  # 8 giờ
 

@@ -1,11 +1,4 @@
-"""
-create_admin.py — Chạy 1 lần để tạo tài khoản admin đầu tiên
-hoặc để migrate user cũ sang dùng bcrypt.
 
-Cách dùng:
-    python create_admin.py
-    python create_admin.py --username admin --password MyP@ss123
-"""
 import argparse
 import sys
 import os
@@ -46,13 +39,7 @@ def create_admin(username: str, password: str, role: str = "admin"):
 
 
 def migrate_all_users():
-    """
-    Migrate tất cả user đang dùng plaintext password sang bcrypt.
-    Chỉ chạy 1 lần sau khi cập nhật code.
 
-    LƯU Ý: Cần biết mật khẩu cũ của từng user để re-hash.
-    Nếu không biết, dùng create_admin() để đặt lại mật khẩu.
-    """
     print("⚠️  Để migrate user cũ, hãy dùng: python create_admin.py --username <tên> --password <mật khẩu mới>")
     print("    Lệnh này sẽ hash lại mật khẩu bằng bcrypt.")
 
