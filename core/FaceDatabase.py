@@ -25,20 +25,24 @@ class FaceDatabase:
         }
         with open(self.database_path, 'wb') as f:
             pickle.dump(data, f)
-        print("💾 Đã lưu database")
-    
+        print("💾 Đã lưu database")  
     def add_person(self, name, encodings, metadata=None):
-        if encodings:
-            # append mỗi vector với tên
-            for e in encodings:
-                self.known_encodings.append(e)         # store raw vectors
-                self.known_names.append(name)          # parallel list of names
-            # metadata lưu thông tin
-            self.face_metadata[name] = {
-                "embeddings": [e.astype(np.float32) for e in encodings],
-                "added": datetime.now().isoformat(),
-                "num_images": len(encodings)
-            }
-            self.save_database()
-            return True
-        return False
+        if not encodings:
+            return False
+
+        mean_vec = np.mean(encodings, axis=0)
+        mean_vec /= np.linalg.norm(mean_vec) + 1e-10
+
+        self.known_encodings.append(
+            mean_vec.astype(np.float32)
+        )
+        self.known_names.append(name)
+
+        self.face_metadata[name] = {
+            "embeddings": [e.astype(np.float32) for e in encodings],
+            "added": datetime.now().isoformat(),
+            "num_images": len(encodings)
+        }
+
+        self.save_database()
+        return True

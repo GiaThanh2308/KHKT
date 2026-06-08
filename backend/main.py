@@ -1,5 +1,5 @@
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Body
+from fastapi import FastAPI, UploadFile, File, Depends, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
@@ -32,10 +32,14 @@ from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Loading face recognition model...")
-    system.faiss_index.build_index(
-        system.database.known_encodings,
-        system.database.known_names
-    )
+    if system.database.known_encodings:
+        system.faiss_index.build_index(
+            system.database.known_encodings,
+            system.database.known_names
+        )
+        print("✅ FAISS loaded")
+    else:
+        print("⚠️ Database khuôn mặt đang trống")
     print("✅ Model loaded")
     yield  # app chạy ở đây
     # shutdown logic nếu cần đặt sau yield
@@ -99,6 +103,14 @@ async def recognize_face(
     for item in ai_results:
         name = item["name"]
         score = item["score"]
+        if name == "unknown":
+            results.append({
+                "id": None,
+                "face_label": "unknown",
+                "score": float(score),
+                "message": "Không nhận diện được"
+            })
+            continue
         student = db.query(Student).filter(Student.face_label == name).first()
 
         if student:
@@ -353,9 +365,8 @@ def create_violation(
 
 @app.get("/violations")
 def get_violations(
-    student_id: Optional[int] = None,
-    # FIX: giới hạn tối đa 200 — tránh client dump toàn bộ DB gây DoS
-    limit: Annotated[int, Body(ge=1, le=200)] = 50,
+    student_id: Optional[int] = Query(default=None),
+    limit: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -403,7 +414,7 @@ def get_summary(
 
 @app.get("/stats/daily")
 def get_daily_stats(
-    days: int = 7,
+    days: int = Query(default=7, ge=1, le=90),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -433,7 +444,7 @@ def get_stats_by_type(
 
 @app.get("/stats/top-violators")
 def get_top_violators(
-    limit: int = 5,
+    limit: int = Query(default=5, ge=1, le=50),
     db: Session = Depends(get_db),
     current_user: dict = Depends(get_current_user)
 ):
@@ -445,7 +456,7 @@ def get_top_violators(
     ).join(Violation, Student.id == Violation.student_id)\
      .group_by(Student.id)\
      .order_by(func.count(Violation.id).desc())\
-     .limit(min(limit, 50)).all()   # FIX: giới hạn tối đa 50
+     .limit(limit).all()   # FIX: giới hạn tối đa 50
 
     return [
         {"full_name": r.full_name, "class_name": r.class_name,

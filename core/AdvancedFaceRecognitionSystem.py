@@ -73,48 +73,81 @@ class AdvancedFaceRecognitionSystem:
         print(f"✅ Đã thêm {name} vào database ({len(encs)} ảnh)")
 
     def rescan_known_faces(self, main_dir="known_faces"):
-        """
-        FIX: cập nhật face_metadata cho mỗi người mới — trước đây thiếu bước này
-        khiến build_ann_index() không thể tìm thấy embeddings của người mới quét.
-        """
-        known_set  = set(self.database.known_names)
+        known_set = set(self.database.known_names)
         new_people = []
+        for class_name in os.listdir(main_dir):
 
-        for root, dirs, files in os.walk(main_dir):
-            for person_name in dirs:
-                folder = os.path.join(root, person_name)
+            class_path = os.path.join(main_dir, class_name)
+
+            if not os.path.isdir(class_path):
+                continue
+
+            for person_name in os.listdir(class_path):
+
+                folder = os.path.join(class_path, person_name)
+
                 if not os.path.isdir(folder):
                     continue
-                if person_name in known_set:
+
+                label_name = f"{person_name}_{class_name}"
+
+                if label_name in known_set:
                     continue
 
                 encs = []
+
                 for fn in os.listdir(folder):
-                    if not fn.lower().endswith((".jpg", ".jpeg", ".png")):
+
+                    if not fn.lower().endswith(
+                        (".jpg", ".jpeg", ".png")
+                    ):
                         continue
+
                     img_path = os.path.join(folder, fn)
-                    img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+                    img = cv2.imdecode(
+                        np.fromfile(
+                            img_path,
+                            dtype=np.uint8
+                        ),
+                        cv2.IMREAD_COLOR
+                    )
+
                     if img is None:
                         continue
+
                     faces = self.app.get(img)
+
                     for f in faces:
                         encs.append(f.embedding)
 
                 if encs:
-                    mean_vec  = np.mean(encs, axis=0)
-                    mean_vec /= np.linalg.norm(mean_vec) + 1e-10
-                    self.database.known_names.append(person_name)
-                    self.database.known_encodings.append(mean_vec.astype(np.float32))
 
-                    # FIX: cập nhật face_metadata để build_ann_index() hoạt động đúng
-                    self.database.face_metadata[person_name] = {
-                        "embeddings": [e.astype(np.float32) for e in encs],
-                        "added":      datetime.now().isoformat(),
+                    mean_vec = np.mean(encs, axis=0)
+                    mean_vec /= np.linalg.norm(mean_vec) + 1e-10
+
+                    self.database.known_names.append(
+                        label_name
+                    )
+
+                    self.database.known_encodings.append(
+                        mean_vec.astype(np.float32)
+                    )
+
+                    self.database.face_metadata[label_name] = {
+                        "embeddings": [
+                            e.astype(np.float32)
+                            for e in encs
+                        ],
+                        "added": datetime.now().isoformat(),
                         "num_images": len(encs)
                     }
 
-                    new_people.append(person_name)
-                    print(f"✅ Đã thêm {person_name} ({len(encs)} ảnh)")
+                    new_people.append(label_name)
+
+                    print(
+                        f"✅ Đã thêm {label_name}"
+                    )
 
         if new_people:
             self.database.save_database()
@@ -126,7 +159,6 @@ class AdvancedFaceRecognitionSystem:
     def build_database_from_images(self, main_dir="known_faces"):
         print("🧠 Đang tạo database khuôn mặt từ ảnh...")
         people = []
-
         for class_name in os.listdir(main_dir):
             class_path = os.path.join(main_dir, class_name)
             if not os.path.isdir(class_path):

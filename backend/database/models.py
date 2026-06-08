@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
 from sqlalchemy.orm import relationship
 from datetime import datetime, timezone
-
+from backend.database.db import Base
 
 def utcnow():
     """Trả về datetime UTC có timezone (aware) — tránh lỗi so sánh với query."""
