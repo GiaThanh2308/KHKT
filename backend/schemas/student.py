@@ -36,3 +36,5 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]
 
 
+
+

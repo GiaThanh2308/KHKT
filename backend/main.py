@@ -121,32 +121,74 @@ def _first_face_image(folder_path: str) -> Optional[str]:
     return None
 
 
+def _normalize(text: str) -> str:
+    """Chuẩn hoá chuỗi: bỏ dấu tiếng Việt, lowercase, bỏ khoảng trắng thừa."""
+    import unicodedata
+    nfkd = unicodedata.normalize("NFKD", text)
+    ascii_text = "".join(c for c in nfkd if not unicodedata.combining(c))
+    return ascii_text.lower().strip()
+
+
 def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
+    """
+    Tìm file ảnh đầu tiên của một người trong KNOWN_FACES_DIR.
+
+    Cấu trúc thư mục được hỗ trợ:
+      known_faces/<ClassName>/<PersonName>/img.jpg   ← label = "PersonName_ClassName"
+      known_faces/<PersonName>/img.jpg               ← label = "PersonName"
+      known_faces/<PersonName_ClassName>/img.jpg     ← label khớp tên thư mục
+
+    So sánh dùng unicode normalization để bỏ dấu tiếng Việt,
+    tránh lỗi "GiaThành" ≠ "giathành" do casefold().
+    """
     label = (face_label or "").strip()
     if not label or not os.path.isdir(KNOWN_FACES_DIR):
         return None
 
-    person_name = None
-    class_name  = None
+    # Tách person_name và class_name từ label (tách tại dấu _ cuối cùng)
+    person_name: Optional[str] = None
+    class_name:  Optional[str] = None
     if "_" in label:
         person_name, class_name = label.rsplit("_", 1)
 
-    label_key  = label.casefold()
-    person_key = person_name.casefold() if person_name else None
-    class_key  = class_name.casefold()  if class_name  else None
-    candidate_dirs: list[str] = []
+    label_norm  = _normalize(label)
+    person_norm = _normalize(person_name) if person_name else None
+    class_norm  = _normalize(class_name)  if class_name  else None
 
-    for root, _, _ in os.walk(KNOWN_FACES_DIR):
-        folder_key = os.path.basename(root).casefold()
-        if person_key and class_key:
-            parent_key = os.path.basename(os.path.dirname(root)).casefold()
-            if folder_key == person_key and parent_key == class_key:
-                candidate_dirs.insert(0, root)
+    # Ưu tiên: thư mục person nằm trong thư mục class (khớp cả hai)
+    priority: list[str] = []
+    fallback: list[str] = []
+
+    for root, dirs, files in os.walk(KNOWN_FACES_DIR):
+        # Chỉ xét thư mục có ảnh
+        has_images = any(f.lower().endswith(FACE_IMAGE_EXTENSIONS) for f in files)
+        if not has_images:
+            continue
+
+        folder_norm = _normalize(os.path.basename(root))
+        parent_norm = _normalize(os.path.basename(os.path.dirname(root)))
+
+        # Khớp hoàn hảo: person_name đúng + class_name đúng
+        if person_norm and class_norm:
+            if folder_norm == person_norm and parent_norm == class_norm:
+                priority.insert(0, root)
                 continue
-        if folder_key == label_key or (person_key and folder_key == person_key):
-            candidate_dirs.append(root)
 
-    for folder_path in candidate_dirs:
+        # Khớp label đầy đủ (ví dụ folder tên "GiaThành_11A1")
+        if folder_norm == label_norm:
+            priority.append(root)
+            continue
+
+        # Khớp riêng person_name
+        if person_norm and folder_norm == person_norm:
+            fallback.append(root)
+            continue
+
+        # Khớp riêng label (không có class)
+        if not person_norm and folder_norm == label_norm:
+            fallback.append(root)
+
+    for folder_path in priority + fallback:
         image_path = _first_face_image(folder_path)
         if image_path:
             return image_path
@@ -647,3 +689,5 @@ VI PHẠM GẦN ĐÂY NHẤT:
         raise HTTPException(status_code=502, detail="Groq trả về response không hợp lệ")
 
     return {"reply": reply}
+
+

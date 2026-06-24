@@ -96,3 +96,5 @@ function searchStudent() {
   if (!q) return;
   quickAsk(`Tìm học sinh: ${q}`);
 }
+
+

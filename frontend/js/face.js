@@ -79,15 +79,26 @@ function apiAssetUrl(path) {
 function renderProfileAvatar(student) {
   const imageUrl = apiAssetUrl(student.face_image_url);
   if (!imageUrl) {
+    console.warn("[Avatar] face_image_url trống cho:", student.face_label);
     return `<div class="profile-avatar"><i class="fa-solid fa-user-graduate"></i></div>`;
   }
+  console.log("[Avatar] Đang tải ảnh:", imageUrl);
   return `
-    <div class="profile-avatar has-photo">
-      <i class="fa-solid fa-user-graduate"></i>
+    <div class="profile-avatar has-photo" id="avatarBox">
+      <i class="fa-solid fa-user-graduate" id="avatarIcon" style="display:none"></i>
       <img
         src="${escHtml(imageUrl)}"
         alt="${escHtml(student.full_name)}"
-        onerror="console.error('Failed image:', this.src);"
+        onload="this.style.display='block'"
+        onerror="
+          console.error('[Avatar] Load thất bại:', this.src);
+          this.style.display='none';
+          const box = document.getElementById('avatarBox');
+          if (box) { box.classList.remove('has-photo'); }
+          const icon = document.getElementById('avatarIcon');
+          if (icon) { icon.style.display=''; }
+        "
+        style="display:none"
       />
     </div>`;
 }
@@ -287,3 +298,5 @@ function showToast(msg, isError = false) {
 // ── Init ─────────────────────────────────────────────────────────────────────
 loadStats();
 loadRecentViolations();
+
+

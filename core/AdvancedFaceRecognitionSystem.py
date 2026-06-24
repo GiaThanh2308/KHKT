@@ -207,3 +207,5 @@ class AdvancedFaceRecognitionSystem:
             cv2.putText(frame, label, (bbox[0], bbox[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
         return frame
+
+
