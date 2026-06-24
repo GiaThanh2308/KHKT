@@ -7,6 +7,7 @@ httpx
 
 # Auth
 passlib[bcrypt]
+bcrypt==4.0.1
 python-jose[cryptography]
 python-multipart
 
@@ -19,7 +20,5 @@ faiss-cpu
 
 # OCR (bien so xe)
 easyocr
-
-
 
 
