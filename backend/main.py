@@ -537,7 +537,17 @@ def create_user(
     db.commit()
     return {"message": "User created"}
 
+@app.get("/debug")
+def debug():
+    import os
 
+    return {
+        "FACE_DATABASE_PATH": str(FACE_DATABASE_PATH),
+        "KNOWN_FACES_DIR": str(KNOWN_FACES_DIR),
+        "db_exists": os.path.exists(FACE_DATABASE_PATH),
+        "known_faces_exists": os.path.exists(KNOWN_FACES_DIR),
+        "loaded_people": len(system.database.known_names)
+    }
 # ─── CHATBOT (Groq) ───────────────────────────────────────────────────────────
 
 @app.post("/chatbot")

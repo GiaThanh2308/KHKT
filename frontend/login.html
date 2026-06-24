@@ -87,6 +87,36 @@
         </div>
 
         <p class="login-footer">AI School © 2025</p>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css" />
+  </head>
+
+  <body>
+    <div class="login-page">
+      <div class="login-card">
+        <div class="login-logo">
+          <i class="fa-solid fa-school"></i>
+          <h1>AI School</h1>
+          <p>Hệ thống AI quản lý học sinh</p>
+        </div>
+
+        <div class="input-group">
+          <label>Username</label>
+          <input type="text" id="username" placeholder="Nhập username"
+            onkeydown="if(event.key==='Enter') login();" />
+        </div>
+
+        <div class="input-group">
+          <label>Mật khẩu</label>
+          <input type="password" id="password" placeholder="Nhập mật khẩu"
+            onkeydown="if(event.key==='Enter') login();" />
+        </div>
+
+        <button onclick="login()">
+          <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+        </button>
+
+        <p id="loginMessage"></p>
       </div>
     </div>
 
