@@ -1,23 +1,69 @@
-// scan.js — Trang quét vi phạm (chỉ nhận diện khuôn mặt)
+// scan.js — Trang quét vi phạm (nhận diện khuôn mặt & biển số xe)
 requireAuth();
 
 document.getElementById("usernameDisplay").textContent =
   localStorage.getItem("username") || "---";
 
 const video = document.getElementById("video");
-let stream  = null;
+let stream           = null;
 let currentStudentId = null;
+let currentMode      = "face"; // "face" | "plate"
 
-// ── Camera ─────────────────────────────────────────────────────
+// ── Chuyển chế độ nhận diện ─────────────────────────────────────────────────
+function switchMode(mode) {
+  currentMode = mode;
+
+  document.getElementById("tabFace").classList.toggle("active",  mode === "face");
+  document.getElementById("tabPlate").classList.toggle("active", mode === "plate");
+
+  // Scan frame
+  document.getElementById("scanFrameFace").classList.toggle("visible",  mode === "face");
+  document.getElementById("scanFramePlate").classList.toggle("visible", mode === "plate");
+
+  // Mode hint
+  const hint = document.getElementById("modeHint");
+  if (mode === "face") {
+    hint.className   = "cam-mode-hint face-hint";
+    hint.innerHTML   = `<i class="fa-solid fa-face-viewfinder"></i> Hướng camera vào khuôn mặt`;
+  } else {
+    hint.className   = "cam-mode-hint plate-hint";
+    hint.innerHTML   = `<i class="fa-solid fa-car"></i> Hướng camera vào biển số xe`;
+  }
+
+  // Nút scan
+  const btnScan = document.getElementById("btnScan");
+  if (mode === "face") {
+    btnScan.className = "btn-cam-scan";
+    btnScan.innerHTML = `<i class="fa-solid fa-face-viewfinder"></i> Nhận diện`;
+    btnScan.onclick   = captureAndRecognize;
+  } else {
+    btnScan.className = "btn-cam-scan plate";
+    btnScan.innerHTML = `<i class="fa-solid fa-car"></i> Quét biển số`;
+    btnScan.onclick   = captureAndScanPlate;
+  }
+
+  // Reset kết quả
+  setResultEmpty();
+}
+
+// ── Camera ──────────────────────────────────────────────────────────────────
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment", width: 640, height: 480 }
+      video: { facingMode: "environment", width: 640, height: 480 },
     });
     video.srcObject     = stream;
     video.style.display = "block";
     document.getElementById("camPlaceholder").style.display = "none";
-    document.getElementById("scanFrame").classList.add("visible");
+
+    const hint = document.getElementById("modeHint");
+    hint.classList.add("visible");
+
+    if (currentMode === "face") {
+      document.getElementById("scanFrameFace").classList.add("visible");
+    } else {
+      document.getElementById("scanFramePlate").classList.add("visible");
+    }
   } catch (err) {
     showToast("Không mở được camera: " + err.message, "error");
   }
@@ -31,13 +77,14 @@ function stopCamera() {
   video.style.display = "none";
   video.srcObject     = null;
   document.getElementById("camPlaceholder").style.display = "flex";
-  document.getElementById("scanFrame").classList.remove("visible");
+  document.getElementById("scanFrameFace").classList.remove("visible");
+  document.getElementById("scanFramePlate").classList.remove("visible");
+  document.getElementById("modeHint").classList.remove("visible");
 }
 
-// ── Capture & nhận diện ────────────────────────────────────────
+// ── Chụp ảnh & nhận diện ────────────────────────────────────────────────────
 async function captureAndRecognize() {
   if (!stream) { showToast("Hãy bật camera trước", "error"); return; }
-
   const canvas = document.getElementById("canvas");
   canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
   canvas.toBlob(async blob => {
@@ -47,15 +94,24 @@ async function captureAndRecognize() {
   }, "image/jpeg", 0.9);
 }
 
+async function captureAndScanPlate() {
+  if (!stream) { showToast("Hãy bật camera trước", "error"); return; }
+  showToast("Tính năng quét biển số đang phát triển", "error");
+}
+
 async function uploadImage() {
   const file = document.getElementById("imageInput").files[0];
   if (!file) return;
   const fd = new FormData();
   fd.append("file", file);
-  await recognizeFace(fd);
+  if (currentMode === "face") {
+    await recognizeFace(fd);
+  } else {
+    showToast("Tính năng quét biển số đang phát triển", "error");
+  }
 }
 
-// ── Face recognition ──────────────────────────────────────────
+// ── Face recognition ─────────────────────────────────────────────────────────
 async function recognizeFace(formData) {
   setResultLoading("Đang nhận diện khuôn mặt...");
   try {
@@ -69,7 +125,7 @@ async function recognizeFace(formData) {
   }
 }
 
-// ── Result helpers ─────────────────────────────────────────────
+// ── Result helpers ────────────────────────────────────────────────────────────
 function setResultLoading(msg = "Đang nhận diện...") {
   currentStudentId = null;
   document.getElementById("resultArea").innerHTML = `
@@ -91,11 +147,12 @@ function setResultEmpty() {
 
 function escHtml(s) {
   if (!s) return "—";
-  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  return String(s)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
-// ── Render kết quả nhận diện ──────────────────────────────────
+// ── Render kết quả nhận diện ─────────────────────────────────────────────────
 function renderFaceResult(data) {
   const faces = data.faces;
   if (!faces || faces.length === 0) { setResultEmpty(); return; }
@@ -155,7 +212,7 @@ function renderFaceResult(data) {
     </div>`;
 }
 
-// ── Save violation ─────────────────────────────────────────────
+// ── Save violation ────────────────────────────────────────────────────────────
 async function saveViolation() {
   if (!currentStudentId) return;
 
@@ -169,7 +226,7 @@ async function saveViolation() {
   try {
     const res = await apiFetch("/violations", {
       method: "POST",
-      body: JSON.stringify({ student_id: currentStudentId, violation_type: type, note }),
+      body:   JSON.stringify({ student_id: currentStudentId, violation_type: type, note }),
     });
 
     if (!res.ok) {
@@ -189,12 +246,12 @@ async function saveViolation() {
   }
 }
 
-// ── Toast ──────────────────────────────────────────────────────
+// ── Toast ─────────────────────────────────────────────────────────────────────
 function showToast(msg, type = "success") {
   document.querySelectorAll(".toast").forEach(t => t.remove());
-  const t = document.createElement("div");
-  t.className = `toast ${type}`;
-  t.innerHTML = `<i class="fa-solid fa-${type === "success" ? "circle-check" : "circle-xmark"}"></i> ${escHtml(msg)}`;
+  const t       = document.createElement("div");
+  t.className   = `toast ${type}`;
+  t.innerHTML   = `<i class="fa-solid fa-${type === "success" ? "circle-check" : "circle-xmark"}"></i> ${escHtml(msg)}`;
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }

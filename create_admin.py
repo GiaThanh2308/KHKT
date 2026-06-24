@@ -1,4 +1,3 @@
-
 import argparse
 import sys
 import os
@@ -60,3 +59,5 @@ if __name__ == "__main__":
         sys.exit(1)
 
     create_admin(args.username, args.password, args.role)
+
+

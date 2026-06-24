@@ -29,6 +29,24 @@ from backend.auth import (
 )
 from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 
+# ── Khởi tạo các biến cấu hình ───────────────────────────────────────────────
+PROJECT_ROOT       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESOURCE_DIR       = os.getenv("RESOURCE_DIR", os.path.join(PROJECT_ROOT, "resources"))
+FACE_DATABASE_PATH = os.path.abspath(
+    os.getenv("FACE_DATABASE_PATH", os.path.join(PROJECT_ROOT, "face_database.pkl"))
+)
+KNOWN_FACES_DIR    = os.path.abspath(
+    os.getenv("KNOWN_FACES_DIR", os.path.join(RESOURCE_DIR, "known_faces"))
+)
+FACE_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
+GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+
+# ── Khởi tạo system TRƯỚC khi tạo app để lifespan dùng được ─────────────────
+system = AdvancedFaceRecognitionSystem()
+if os.path.exists(FACE_DATABASE_PATH):
+    system.database.database_path = FACE_DATABASE_PATH
+    system.database.load_database()
+
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -36,7 +54,7 @@ async def lifespan(app: FastAPI):
     if system.database.known_encodings:
         system.faiss_index.build_index(
             system.database.known_encodings,
-            system.database.known_names
+            system.database.known_names,
         )
         if system.faiss_index.index is not None:
             print("✅ FAISS loaded")
@@ -49,11 +67,11 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI School API", lifespan=lifespan)
 
-# ── CORS linh động ────────────────────────────────────────────────────
+# ── CORS linh động ────────────────────────────────────────────────────────────
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 
 if _raw_origins.strip() == "*":
-    ALLOWED_ORIGINS = ["*"]
+    ALLOWED_ORIGINS    = ["*"]
     _allow_credentials = False
 else:
     ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
@@ -76,27 +94,12 @@ app.add_middleware(
 
 Base.metadata.create_all(bind=engine)
 
-PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-RESOURCE_DIR = os.getenv("RESOURCE_DIR", os.path.join(PROJECT_ROOT, "resources"))
-FACE_DATABASE_PATH = os.path.abspath(
-    os.getenv("FACE_DATABASE_PATH", os.path.join(PROJECT_ROOT, "face_database.pkl"))
-)
-KNOWN_FACES_DIR = os.path.abspath(
-    os.getenv("KNOWN_FACES_DIR", os.path.join(RESOURCE_DIR, "known_faces"))
-)
-FACE_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
-
 if os.path.isdir(KNOWN_FACES_DIR):
     app.mount(
         "/face-images",
         StaticFiles(directory=KNOWN_FACES_DIR),
         name="face-images",
     )
-
-system = AdvancedFaceRecognitionSystem()
-if os.path.exists(FACE_DATABASE_PATH):
-    system.database.database_path = FACE_DATABASE_PATH
-    system.database.load_database()
 
 
 def get_db():
@@ -124,7 +127,7 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
         return None
 
     person_name = None
-    class_name = None
+    class_name  = None
     if "_" in label:
         person_name, class_name = label.rsplit("_", 1)
 
@@ -150,7 +153,7 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
     return None
 
 
-# ─── FACE RECOGNITION ────────────────────────────────────────
+# ─── FACE RECOGNITION ────────────────────────────────────────────────────────
 
 def get_face_image_url(face_label: Optional[str]) -> Optional[str]:
     label = (face_label or "").strip()
@@ -171,11 +174,11 @@ def serve_face_image(face_label: str):
 async def recognize_face(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     contents = await file.read()
-    np_arr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+    np_arr   = np.frombuffer(contents, np.uint8)
+    img      = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
 
     if img is None:
         raise HTTPException(status_code=400, detail="Không đọc được ảnh")
@@ -191,10 +194,10 @@ async def recognize_face(
         score = item["score"]
         if name == "unknown":
             results.append({
-                "id": None,
+                "id":         None,
                 "face_label": "unknown",
-                "score": float(score),
-                "message": "Không nhận diện được"
+                "score":      float(score),
+                "message":    "Không nhận diện được",
             })
             continue
         student = db.query(Student).filter(Student.face_label == name).first()
@@ -207,25 +210,25 @@ async def recognize_face(
                 "face_label":     student.face_label,
                 "face_image_url": get_face_image_url(student.face_label),
                 "phone":          student.phone,
-                "score":          float(score)
+                "score":          float(score),
             })
         else:
             results.append({
                 "id":         None,
                 "face_label": name,
                 "score":      float(score),
-                "message":    "Chưa có hồ sơ học sinh"
+                "message":    "Chưa có hồ sơ học sinh",
             })
 
     return {"faces": results}
 
 
-# ─── STUDENTS ────────────────────────────────────────────────
+# ─── STUDENTS ────────────────────────────────────────────────────────────────
 
 @app.get("/students")
 def get_students(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     students = db.query(Student).all()
     return [
@@ -246,7 +249,7 @@ def get_students(
 def get_student(
     student_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
@@ -266,7 +269,7 @@ def get_student(
 def create_student(
     student: StudentCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     existing = db.query(Student).filter(Student.student_code == student.student_code).first()
     if existing:
@@ -279,11 +282,11 @@ def create_student(
             raise HTTPException(status_code=400, detail="Face label đã được dùng bởi học sinh khác")
 
     new_student = Student(
-        student_code = student.student_code,
-        full_name    = student.full_name,
-        class_name   = student.class_name,
-        face_label   = face_label,
-        phone        = student.phone,
+        student_code=student.student_code,
+        full_name=student.full_name,
+        class_name=student.class_name,
+        face_label=face_label,
+        phone=student.phone,
     )
     db.add(new_student)
     db.commit()
@@ -296,23 +299,27 @@ def update_student(
     student_id: int,
     student: StudentUpdate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     db_student = db.query(Student).filter(Student.id == student_id).first()
     if not db_student:
         raise HTTPException(status_code=404, detail="Không tìm thấy học sinh")
 
-    if student.student_code is not None: db_student.student_code = student.student_code
-    if student.full_name    is not None: db_student.full_name    = student.full_name
-    if student.class_name   is not None: db_student.class_name   = student.class_name
-    if student.phone        is not None: db_student.phone        = student.phone
+    if student.student_code is not None:
+        db_student.student_code = student.student_code
+    if student.full_name is not None:
+        db_student.full_name = student.full_name
+    if student.class_name is not None:
+        db_student.class_name = student.class_name
+    if student.phone is not None:
+        db_student.phone = student.phone
 
     if student.face_label is not None:
         face_label = student.face_label.strip() or None
         if face_label:
             dup = db.query(Student).filter(
                 Student.face_label == face_label,
-                Student.id != student_id
+                Student.id != student_id,
             ).first()
             if dup:
                 raise HTTPException(status_code=400, detail="Face label đã được dùng bởi học sinh khác")
@@ -326,7 +333,7 @@ def update_student(
 def delete_student(
     student_id: int,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     student = db.query(Student).filter(Student.id == student_id).first()
     if not student:
@@ -336,23 +343,23 @@ def delete_student(
     return {"message": "Đã xóa học sinh"}
 
 
-# ─── VIOLATIONS ──────────────────────────────────────────────
+# ─── VIOLATIONS ──────────────────────────────────────────────────────────────
 
 @app.post("/violations")
 def create_violation(
     violation: ViolationCreate,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     student = db.query(Student).filter(Student.id == violation.student_id).first()
     if not student:
         raise HTTPException(status_code=404, detail="Không tìm thấy học sinh")
 
     new_v = Violation(
-        student_id     = violation.student_id,
-        violation_type = violation.violation_type,
-        note           = violation.note,
-        image_path     = violation.image_path,
+        student_id=violation.student_id,
+        violation_type=violation.violation_type,
+        note=violation.note,
+        image_path=violation.image_path,
     )
     db.add(new_v)
     db.commit()
@@ -365,7 +372,7 @@ def get_violations(
     student_id: Optional[int] = Query(default=None),
     limit: int = Query(default=50, ge=1, le=200),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     query = db.query(Violation)
     if student_id:
@@ -388,12 +395,12 @@ def get_violations(
     ]
 
 
-# ─── THỐNG KÊ ────────────────────────────────────────────────
+# ─── THỐNG KÊ ─────────────────────────────────────────────────────────────────
 
 @app.get("/stats/summary")
 def get_summary(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     now         = datetime.now(timezone.utc)
     today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
@@ -413,7 +420,7 @@ def get_summary(
 def get_daily_stats(
     days: int = Query(default=7, ge=1, le=90),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     result = []
     for i in range(days - 1, -1, -1):
@@ -421,7 +428,7 @@ def get_daily_stats(
         day_end = day + timedelta(days=1)
         count   = db.query(Violation).filter(
             Violation.created_at >= day,
-            Violation.created_at < day_end
+            Violation.created_at < day_end,
         ).count()
         result.append({"date": day.strftime("%d/%m"), "count": count})
     return result
@@ -430,11 +437,11 @@ def get_daily_stats(
 @app.get("/stats/by-type")
 def get_stats_by_type(
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     rows = db.query(
         Violation.violation_type,
-        func.count(Violation.id).label("count")
+        func.count(Violation.id).label("count"),
     ).group_by(Violation.violation_type).all()
     return [{"type": r.violation_type, "count": r.count} for r in rows]
 
@@ -443,31 +450,38 @@ def get_stats_by_type(
 def get_top_violators(
     limit: int = Query(default=5, ge=1, le=50),
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
-    rows = db.query(
-        Student.full_name,
-        Student.class_name,
-        Student.student_code,
-        func.count(Violation.id).label("count")
-    ).join(Violation, Student.id == Violation.student_id)\
-     .group_by(Student.id)\
-     .order_by(func.count(Violation.id).desc())\
-     .limit(limit).all()
-
+    rows = (
+        db.query(
+            Student.full_name,
+            Student.class_name,
+            Student.student_code,
+            func.count(Violation.id).label("count"),
+        )
+        .join(Violation, Student.id == Violation.student_id)
+        .group_by(Student.id)
+        .order_by(func.count(Violation.id).desc())
+        .limit(limit)
+        .all()
+    )
     return [
-        {"full_name": r.full_name, "class_name": r.class_name,
-         "student_code": r.student_code, "count": r.count}
+        {
+            "full_name":    r.full_name,
+            "class_name":   r.class_name,
+            "student_code": r.student_code,
+            "count":        r.count,
+        }
         for r in rows
     ]
 
 
-# ─── AUTH ─────────────────────────────────────────────────────
+# ─── AUTH ─────────────────────────────────────────────────────────────────────
 
 @app.post("/login")
 def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     user = db.query(User).filter(User.username == form_data.username).first()
     if not user or not verify_password(form_data.password, user.hashed_password):
@@ -490,30 +504,33 @@ class CreateUserRequest(BaseModel):
     password: str
     role: str = "teacher"
 
+
 @app.post("/create-user")
 def create_user(
     body: CreateUserRequest,
     db: Session = Depends(get_db),
-    _admin: dict = Depends(require_admin)
+    _admin: dict = Depends(require_admin),
 ):
     existing = db.query(User).filter(User.username == body.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username đã tồn tại")
-    user = User(username=body.username, hashed_password=hash_password(body.password), role=body.role)
+    user = User(
+        username=body.username,
+        hashed_password=hash_password(body.password),
+        role=body.role,
+    )
     db.add(user)
     db.commit()
     return {"message": "User created"}
 
 
-# ─── CHATBOT (Groq) ───────────────────────────────────────────
-
-GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
+# ─── CHATBOT (Groq) ───────────────────────────────────────────────────────────
 
 @app.post("/chatbot")
 async def chatbot(
     req: ChatRequest,
     db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
+    current_user: dict = Depends(get_current_user),
 ):
     api_key = os.getenv("GROQ_API_KEY")
     if not api_key:
@@ -531,21 +548,31 @@ async def chatbot(
     total_v  = db.query(Violation).count()
 
     top_rows = (
-        db.query(Student.full_name, Student.student_code, Student.class_name,
-                 func.count(Violation.id).label("cnt"))
+        db.query(
+            Student.full_name,
+            Student.student_code,
+            Student.class_name,
+            func.count(Violation.id).label("cnt"),
+        )
         .join(Violation, Student.id == Violation.student_id)
         .group_by(Student.id)
         .order_by(func.count(Violation.id).desc())
-        .limit(5).all()
+        .limit(5)
+        .all()
     )
     top_list = "\n".join(
         f"  {i+1}. {r.full_name} ({r.student_code} - {r.class_name}): {r.cnt} vi phạm"
         for i, r in enumerate(top_rows)
     ) or "  (chưa có dữ liệu)"
 
-    type_rows = db.query(Violation.violation_type, func.count(Violation.id).label("cnt"))\
-                  .group_by(Violation.violation_type).all()
-    type_list = "\n".join(f"  - {r.violation_type}: {r.cnt} lần" for r in type_rows) or "  (chưa có dữ liệu)"
+    type_rows = (
+        db.query(Violation.violation_type, func.count(Violation.id).label("cnt"))
+        .group_by(Violation.violation_type)
+        .all()
+    )
+    type_list = "\n".join(
+        f"  - {r.violation_type}: {r.cnt} lần" for r in type_rows
+    ) or "  (chưa có dữ liệu)"
 
     recent = db.query(Violation).order_by(Violation.created_at.desc()).limit(10).all()
     recent_list = "\n".join(
@@ -587,7 +614,7 @@ VI PHẠM GẦN ĐÂY NHẤT:
 
     groq_messages = [{"role": "system", "content": system_prompt}] + [
         {
-            "role": "assistant" if msg.role == "assistant" else "user",
+            "role":    "assistant" if msg.role == "assistant" else "user",
             "content": msg.content,
         }
         for msg in req.messages
@@ -604,11 +631,14 @@ VI PHẠM GẦN ĐÂY NHẤT:
     async with httpx.AsyncClient() as client:
         response = await client.post(
             "https://api.groq.com/openai/v1/chat/completions",
-            json=payload, headers=headers, timeout=30.0
+            json=payload, headers=headers, timeout=30.0,
         )
 
     if response.status_code != 200:
-        raise HTTPException(status_code=502, detail=f"Groq API lỗi {response.status_code}: {response.text[:300]}")
+        raise HTTPException(
+            status_code=502,
+            detail=f"Groq API lỗi {response.status_code}: {response.text[:300]}",
+        )
 
     data = response.json()
     try:

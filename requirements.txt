@@ -19,3 +19,5 @@ faiss-cpu
 
 # OCR (bien so xe)
 easyocr
+
+

@@ -1,21 +1,28 @@
-// FIX: dùng requireAuth() từ api.js
+// face.js — Trang nhận diện khuôn mặt (index.html)
 requireAuth();
+
 document.getElementById("usernameDisplay").textContent =
   localStorage.getItem("username");
 
 const video = document.getElementById("video");
-let stream = null;
+let stream  = null;
 
-// ─── Load stats on page load ─────────────────────────────────
+// ── Load stats ───────────────────────────────────────────────────────────────
 async function loadStats() {
   try {
     const res = await apiFetch("/stats/summary");
     if (!res.ok) return;
     const data = await res.json();
-    document.getElementById("statStudents").textContent = data.total_students;
-    document.getElementById("statToday").textContent = data.today_violations;
-    document.getElementById("statWeek").textContent = data.week_violations;
-    document.getElementById("statMonth").textContent = data.month_violations;
+
+    // Cập nhật các element nếu tồn tại trên trang
+    const safeSet = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = val;
+    };
+    safeSet("statStudents", data.total_students);
+    safeSet("statToday",    data.today_violations);
+    safeSet("statWeek",     data.week_violations);
+    safeSet("statMonth",    data.month_violations);
   } catch (e) {
     console.warn("Không load được stats:", e);
   }
@@ -25,22 +32,21 @@ async function loadRecentViolations() {
   try {
     const res = await apiFetch("/violations?limit=5");
     if (!res.ok) return;
-    const data = await res.json();
+    const data  = await res.json();
     const tbody = document.getElementById("recentViolations");
-    if (!data.length) return;
+    if (!data.length || !tbody) return;
 
-    tbody.innerHTML = data
-      .map(
-        (v) => `
+    tbody.innerHTML = data.map(v => `
       <tr>
-        <td><strong>${escHtml(v.student_name)}</strong><br><small style="color:var(--gray-400)">${escHtml(v.student_code)}</small></td>
+        <td>
+          <strong>${escHtml(v.student_name)}</strong>
+          <br><small style="color:var(--gray-400)">${escHtml(v.student_code)}</small>
+        </td>
         <td>${escHtml(v.class_name)}</td>
         <td><span class="badge badge-red">${escHtml(v.violation_type)}</span></td>
         <td style="color:var(--gray-400);font-size:13px">${formatDate(v.created_at)}</td>
       </tr>
-    `,
-      )
-      .join("");
+    `).join("");
   } catch (e) {
     console.warn("Không load được vi phạm:", e);
   }
@@ -49,8 +55,7 @@ async function loadRecentViolations() {
 function formatDate(isoStr) {
   const d = new Date(isoStr);
   return (
-    d.toLocaleDateString("vi-VN") +
-    " " +
+    d.toLocaleDateString("vi-VN") + " " +
     d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
   );
 }
@@ -58,11 +63,11 @@ function formatDate(isoStr) {
 function escHtml(str) {
   if (str == null) return "";
   return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#39;");
+    .replace(/&/g,  "&amp;")
+    .replace(/</g,  "&lt;")
+    .replace(/>/g,  "&gt;")
+    .replace(/"/g,  "&quot;")
+    .replace(/'/g,  "&#39;");
 }
 
 function apiAssetUrl(path) {
@@ -76,7 +81,6 @@ function renderProfileAvatar(student) {
   if (!imageUrl) {
     return `<div class="profile-avatar"><i class="fa-solid fa-user-graduate"></i></div>`;
   }
-
   return `
     <div class="profile-avatar has-photo">
       <i class="fa-solid fa-user-graduate"></i>
@@ -88,11 +92,11 @@ function renderProfileAvatar(student) {
     </div>`;
 }
 
-// ─── Camera ──────────────────────────────────────────────────
+// ── Camera ───────────────────────────────────────────────────────────────────
 async function startCamera() {
   try {
     stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject = stream;
+    video.srcObject    = stream;
     video.style.display = "block";
     document.getElementById("cameraPlaceholder").style.display = "none";
   } catch (err) {
@@ -102,23 +106,19 @@ async function startCamera() {
 
 function stopCamera() {
   if (stream) {
-    stream.getTracks().forEach((t) => t.stop());
+    stream.getTracks().forEach(t => t.stop());
     stream = null;
   }
   video.style.display = "none";
-  video.srcObject = null;
+  video.srcObject     = null;
   document.getElementById("cameraPlaceholder").style.display = "block";
 }
 
 async function captureAndRecognize() {
-  if (!stream) {
-    alert("Hãy bật camera trước");
-    return;
-  }
+  if (!stream) { alert("Hãy bật camera trước"); return; }
   const canvas = document.getElementById("canvas");
   canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  canvas.toBlob(async (blob) => {
+  canvas.toBlob(async blob => {
     const formData = new FormData();
     formData.append("file", blob, "capture.jpg");
     await sendRecognize(formData);
@@ -127,10 +127,7 @@ async function captureAndRecognize() {
 
 async function uploadImage() {
   const file = document.getElementById("imageInput").files[0];
-  if (!file) {
-    alert("Chọn ảnh trước");
-    return;
-  }
+  if (!file) { alert("Chọn ảnh trước"); return; }
   const formData = new FormData();
   formData.append("file", file);
   await sendRecognize(formData);
@@ -138,27 +135,39 @@ async function uploadImage() {
 
 async function sendRecognize(formData) {
   const profile = document.getElementById("studentProfile");
-  profile.innerHTML = `<div class="empty-profile"><i class="fa-solid fa-spinner fa-spin"></i><p>Đang nhận diện...</p></div>`;
+  profile.innerHTML = `
+    <div class="empty-profile">
+      <i class="fa-solid fa-spinner fa-spin"></i>
+      <p>Đang nhận diện...</p>
+    </div>`;
 
   try {
     const response = await apiFetch("/recognize-face", {
       method: "POST",
-      body: formData,
+      body:   formData,
     });
 
     if (!response.ok) {
-      profile.innerHTML = `<div class="empty-profile"><i class="fa-solid fa-circle-exclamation"></i><p>Lỗi server (${response.status})</p></div>`;
+      profile.innerHTML = `
+        <div class="empty-profile">
+          <i class="fa-solid fa-circle-exclamation"></i>
+          <p>Lỗi server (${response.status})</p>
+        </div>`;
       return;
     }
 
     const data = await response.json();
     renderStudentProfile(data);
   } catch (err) {
-    profile.innerHTML = `<div class="empty-profile"><i class="fa-solid fa-circle-exclamation"></i><p>Lỗi kết nối server</p></div>`;
+    profile.innerHTML = `
+      <div class="empty-profile">
+        <i class="fa-solid fa-circle-exclamation"></i>
+        <p>Lỗi kết nối server</p>
+      </div>`;
   }
 }
 
-// ─── Render profile ───────────────────────────────────────────
+// ── Render profile ────────────────────────────────────────────────────────────
 function renderStudentProfile(data) {
   const profile = document.getElementById("studentProfile");
 
@@ -172,14 +181,12 @@ function renderStudentProfile(data) {
     return;
   }
 
-  const s = data.faces[0];
+  const s        = data.faces[0];
   const accuracy = Math.round(s.score * 100);
   const accColor =
-    accuracy >= 80
-      ? "var(--success)"
-      : accuracy >= 60
-        ? "var(--warning)"
-        : "var(--danger)";
+    accuracy >= 80 ? "var(--success)" :
+    accuracy >= 60 ? "var(--warning)" :
+                     "var(--danger)";
 
   if (!s.id) {
     profile.innerHTML = `
@@ -230,19 +237,15 @@ function renderStudentProfile(data) {
     </div>`;
 }
 
-// ─── Save violation ───────────────────────────────────────────
+// ── Save violation ────────────────────────────────────────────────────────────
 async function saveViolation(studentId) {
   const violationType = document.getElementById("violationType").value;
-  const note = document.getElementById("violationNote").value;
+  const note          = document.getElementById("violationNote").value;
 
   try {
     const res = await apiFetch("/violations", {
       method: "POST",
-      body: JSON.stringify({
-        student_id: studentId,
-        violation_type: violationType,
-        note,
-      }),
+      body:   JSON.stringify({ student_id: studentId, violation_type: violationType, note }),
     });
 
     if (!res.ok) {
@@ -264,23 +267,23 @@ function showToast(msg, isError = false) {
   const toast = document.createElement("div");
   toast.textContent = msg;
   Object.assign(toast.style, {
-    position: "fixed",
-    bottom: "24px",
-    right: "24px",
-    background: isError ? "var(--danger)" : "#1f2937",
-    color: "white",
-    padding: "14px 20px",
+    position:     "fixed",
+    bottom:       "24px",
+    right:        "24px",
+    background:   isError ? "var(--danger)" : "#1f2937",
+    color:        "white",
+    padding:      "14px 20px",
     borderRadius: "12px",
-    fontSize: "14px",
-    fontWeight: "600",
-    zIndex: "9999",
-    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
-    fontFamily: "inherit",
+    fontSize:     "14px",
+    fontWeight:   "600",
+    zIndex:       "9999",
+    boxShadow:    "0 8px 24px rgba(0,0,0,0.2)",
+    fontFamily:   "inherit",
   });
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }
 
-// Init
+// ── Init ─────────────────────────────────────────────────────────────────────
 loadStats();
 loadRecentViolations();
