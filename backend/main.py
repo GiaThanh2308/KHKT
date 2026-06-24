@@ -12,7 +12,6 @@ from urllib.parse import quote
 import numpy as np
 import cv2
 import os
-import re
 import httpx
 from dotenv import load_dotenv
 from pydantic import BaseModel
@@ -30,7 +29,7 @@ from backend.auth import (
 )
 from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 
-# FIX: dùng lifespan thay @app.on_event("startup") đã deprecated
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Loading face recognition model...")
@@ -45,17 +44,32 @@ async def lifespan(app: FastAPI):
             print("✅ Model loaded")
     else:
         print("⚠️ Database khuôn mặt đang trống")
-    yield  # app chạy ở đây
-    # shutdown logic nếu cần đặt sau yield
+    yield
+
 
 app = FastAPI(title="AI School API", lifespan=lifespan)
 
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5500,http://localhost:5501,http://127.0.0.1:5500,http://127.0.0.1:5501").split(",")
+# ── CORS linh động ────────────────────────────────────────────────────
+_raw_origins = os.getenv("ALLOWED_ORIGINS", "")
+
+if _raw_origins.strip() == "*":
+    ALLOWED_ORIGINS = ["*"]
+    _allow_credentials = False
+else:
+    ALLOWED_ORIGINS = [o.strip() for o in _raw_origins.split(",") if o.strip()]
+    if not ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS = [
+            "http://localhost:5500",
+            "http://localhost:5501",
+            "http://127.0.0.1:5500",
+            "http://127.0.0.1:5501",
+        ]
+    _allow_credentials = True
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS,
-    allow_credentials=True,
+    allow_credentials=_allow_credentials,
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -67,9 +81,6 @@ RESOURCE_DIR = os.getenv("RESOURCE_DIR", os.path.join(PROJECT_ROOT, "resources")
 FACE_DATABASE_PATH = os.path.abspath(
     os.getenv("FACE_DATABASE_PATH", os.path.join(PROJECT_ROOT, "face_database.pkl"))
 )
-if not FACE_DATABASE_PATH:
-    FACE_DATABASE_PATH = os.path.abspath(
-        os.getenv("FACE_DATABASE_PATH", os.path.join(RESOURCE_DIR, "face_database.pkl")))
 KNOWN_FACES_DIR = os.path.abspath(
     os.getenv("KNOWN_FACES_DIR", os.path.join(RESOURCE_DIR, "known_faces"))
 )
@@ -87,16 +98,6 @@ if os.path.exists(FACE_DATABASE_PATH):
     system.database.database_path = FACE_DATABASE_PATH
     system.database.load_database()
 
-_ocr_reader = None
-
-def get_ocr():
-    global _ocr_reader
-    if _ocr_reader is None:
-        import easyocr
-        _ocr_reader = easyocr.Reader(["en"], gpu=False)
-        print("✅ EasyOCR loaded")
-    return _ocr_reader
-
 
 def get_db():
     db = SessionLocal()
@@ -111,7 +112,6 @@ def _first_face_image(folder_path: str) -> Optional[str]:
         filenames = sorted(os.listdir(folder_path))
     except OSError:
         return None
-
     for filename in filenames:
         if filename.lower().endswith(FACE_IMAGE_EXTENSIONS):
             return os.path.join(folder_path, filename)
@@ -128,20 +128,18 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
     if "_" in label:
         person_name, class_name = label.rsplit("_", 1)
 
-    label_key = label.casefold()
+    label_key  = label.casefold()
     person_key = person_name.casefold() if person_name else None
-    class_key = class_name.casefold() if class_name else None
+    class_key  = class_name.casefold()  if class_name  else None
     candidate_dirs: list[str] = []
 
     for root, _, _ in os.walk(KNOWN_FACES_DIR):
         folder_key = os.path.basename(root).casefold()
-
         if person_key and class_key:
             parent_key = os.path.basename(os.path.dirname(root)).casefold()
             if folder_key == person_key and parent_key == class_key:
                 candidate_dirs.insert(0, root)
                 continue
-
         if folder_key == label_key or (person_key and folder_key == person_key):
             candidate_dirs.append(root)
 
@@ -149,7 +147,6 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
         image_path = _first_face_image(folder_path)
         if image_path:
             return image_path
-
     return None
 
 
@@ -190,7 +187,7 @@ async def recognize_face(
 
     results = []
     for item in ai_results:
-        name = item["name"]
+        name  = item["name"]
         score = item["score"]
         if name == "unknown":
             results.append({
@@ -201,18 +198,16 @@ async def recognize_face(
             })
             continue
         student = db.query(Student).filter(Student.face_label == name).first()
-
         if student:
             results.append({
-                "id":           student.id,
-                "student_code": student.student_code,
-                "full_name":    student.full_name,
-                "class_name":   student.class_name,
-                "face_label":   student.face_label,
+                "id":             student.id,
+                "student_code":   student.student_code,
+                "full_name":      student.full_name,
+                "class_name":     student.class_name,
+                "face_label":     student.face_label,
                 "face_image_url": get_face_image_url(student.face_label),
-                "phone":        student.phone,
-                "plate_number": student.plate_number,
-                "score":        float(score)
+                "phone":          student.phone,
+                "score":          float(score)
             })
         else:
             results.append({
@@ -225,86 +220,6 @@ async def recognize_face(
     return {"faces": results}
 
 
-# ─── PLATE RECOGNITION ───────────────────────────────────────
-
-def clean_plate(raw: str) -> str:
-    text = re.sub(r"[^A-Za-z0-9]", "", raw).upper()
-    return text
-
-
-def preprocess_plate(img: np.ndarray) -> np.ndarray:
-    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    clahe = cv2.createCLAHE(clipLimit=3.0, tileGridSize=(8, 8))
-    enhanced = clahe.apply(gray)
-    _, thresh = cv2.threshold(enhanced, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
-    return thresh
-
-
-@app.post("/recognize-plate")
-async def recognize_plate(
-    file: UploadFile = File(...),
-    db: Session = Depends(get_db),
-    current_user: dict = Depends(get_current_user)
-):
-    contents = await file.read()
-    np_arr = np.frombuffer(contents, np.uint8)
-    img = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
-
-    if img is None:
-        raise HTTPException(status_code=400, detail="Không đọc được ảnh")
-
-    ocr = get_ocr()
-    results = ocr.readtext(img, detail=1, paragraph=False)
-
-    if not results:
-        processed = preprocess_plate(img)
-        results = ocr.readtext(processed, detail=1, paragraph=False)
-
-    if not results:
-        return {"plate_number": None, "student": None, "message": "Không đọc được biển số"}
-
-    results.sort(key=lambda x: x[2], reverse=True)
-    raw_texts   = [r[1] for r in results[:3]]
-    raw_plate   = " ".join(raw_texts)
-    plate_clean = clean_plate(raw_plate)
-
-    if len(plate_clean) < 5:
-        return {
-            "plate_number": plate_clean or raw_plate,
-            "student": None,
-            "message": "Biển số quá ngắn, không thể tra cứu"
-        }
-
-    student = db.query(Student).filter(
-        Student.plate_number.ilike(f"%{plate_clean}%")
-    ).first()
-
-    if not student and len(plate_clean) >= 6:
-        suffix = plate_clean[-6:]
-        student = db.query(Student).filter(
-            Student.plate_number.ilike(f"%{suffix}%")
-        ).first()
-
-    student_data = None
-    if student:
-        student_data = {
-            "id":           student.id,
-            "student_code": student.student_code,
-            "full_name":    student.full_name,
-            "class_name":   student.class_name,
-            "phone":        student.phone,
-            "plate_number": student.plate_number,
-        }
-
-    return {
-        "plate_number": plate_clean,
-        "raw_text":     raw_plate,
-        "confidence":   round(float(results[0][2]), 2),
-        "student":      student_data,
-        "message":      "Tìm thấy học sinh" if student_data else "Không tìm thấy học sinh với biển số này"
-    }
-
-
 # ─── STUDENTS ────────────────────────────────────────────────
 
 @app.get("/students")
@@ -315,14 +230,13 @@ def get_students(
     students = db.query(Student).all()
     return [
         {
-            "id":           s.id,
-            "student_code": s.student_code,
-            "full_name":    s.full_name,
-            "class_name":   s.class_name,
-            "phone":        s.phone,
-            "face_label":   s.face_label,
+            "id":             s.id,
+            "student_code":   s.student_code,
+            "full_name":      s.full_name,
+            "class_name":     s.class_name,
+            "phone":          s.phone,
+            "face_label":     s.face_label,
             "face_image_url": get_face_image_url(s.face_label),
-            "plate_number": s.plate_number,
         }
         for s in students
     ]
@@ -338,14 +252,13 @@ def get_student(
     if not student:
         raise HTTPException(status_code=404, detail="Không tìm thấy học sinh")
     return {
-        "id":           student.id,
-        "student_code": student.student_code,
-        "full_name":    student.full_name,
-        "class_name":   student.class_name,
-        "phone":        student.phone,
-        "face_label":   student.face_label,
+        "id":             student.id,
+        "student_code":   student.student_code,
+        "full_name":      student.full_name,
+        "class_name":     student.class_name,
+        "phone":          student.phone,
+        "face_label":     student.face_label,
         "face_image_url": get_face_image_url(student.face_label),
-        "plate_number": student.plate_number,
     }
 
 
@@ -360,7 +273,6 @@ def create_student(
         raise HTTPException(status_code=400, detail="Mã học sinh đã tồn tại")
 
     face_label = (student.face_label or "").strip() or None
-
     if face_label:
         dup = db.query(Student).filter(Student.face_label == face_label).first()
         if dup:
@@ -372,7 +284,6 @@ def create_student(
         class_name   = student.class_name,
         face_label   = face_label,
         phone        = student.phone,
-        plate_number = student.plate_number,
     )
     db.add(new_student)
     db.commit()
@@ -395,7 +306,6 @@ def update_student(
     if student.full_name    is not None: db_student.full_name    = student.full_name
     if student.class_name   is not None: db_student.class_name   = student.class_name
     if student.phone        is not None: db_student.phone        = student.phone
-    if student.plate_number is not None: db_student.plate_number = student.plate_number
 
     if student.face_label is not None:
         face_label = student.face_label.strip() or None
@@ -471,7 +381,7 @@ def get_violations(
             "class_name":     v.student.class_name   if v.student else "",
             "violation_type": v.violation_type,
             "note":           v.note,
-            "image_path":     v.image_path,   # FIX: thêm trường bị thiếu
+            "image_path":     v.image_path,
             "created_at":     v.created_at.isoformat(),
         }
         for v in violations
@@ -543,7 +453,7 @@ def get_top_violators(
     ).join(Violation, Student.id == Violation.student_id)\
      .group_by(Student.id)\
      .order_by(func.count(Violation.id).desc())\
-     .limit(limit).all()   # FIX: giới hạn tối đa 50
+     .limit(limit).all()
 
     return [
         {"full_name": r.full_name, "class_name": r.class_name,
@@ -566,7 +476,6 @@ def login(
             detail="Sai tài khoản hoặc mật khẩu",
             headers={"WWW-Authenticate": "Bearer"},
         )
-
     token = create_access_token({"sub": user.username, "role": user.role})
     return {
         "access_token": token,
@@ -576,7 +485,6 @@ def login(
     }
 
 
-# FIX: dùng Pydantic body thay query params — tránh lộ password qua URL/log
 class CreateUserRequest(BaseModel):
     username: str
     password: str
@@ -591,7 +499,6 @@ def create_user(
     existing = db.query(User).filter(User.username == body.username).first()
     if existing:
         raise HTTPException(status_code=400, detail="Username đã tồn tại")
-
     user = User(username=body.username, hashed_password=hash_password(body.password), role=body.role)
     db.add(user)
     db.commit()
@@ -686,19 +593,19 @@ VI PHẠM GẦN ĐÂY NHẤT:
         for msg in req.messages
     ]
 
-    groq_url = "https://api.groq.com/openai/v1/chat/completions"
-
     payload = {
-        "model": GROQ_MODEL,
-        "messages": groq_messages,
-        "max_tokens": 512,
+        "model":       GROQ_MODEL,
+        "messages":    groq_messages,
+        "max_tokens":  512,
         "temperature": 0.3,
     }
-
     headers = {"Authorization": f"Bearer {api_key}"}
 
     async with httpx.AsyncClient() as client:
-        response = await client.post(groq_url, json=payload, headers=headers, timeout=30.0)
+        response = await client.post(
+            "https://api.groq.com/openai/v1/chat/completions",
+            json=payload, headers=headers, timeout=30.0
+        )
 
     if response.status_code != 200:
         raise HTTPException(status_code=502, detail=f"Groq API lỗi {response.status_code}: {response.text[:300]}")
@@ -710,5 +617,3 @@ VI PHẠM GẦN ĐÂY NHẤT:
         raise HTTPException(status_code=502, detail="Groq trả về response không hợp lệ")
 
     return {"reply": reply}
-
-

@@ -1,6 +1,6 @@
 // students.js — Chỉ dành cho teacher/admin
 requireAuth();
-requireTeacher(); // đội an ninh không được vào
+requireTeacher();
 
 document.getElementById("usernameDisplay").textContent =
   localStorage.getItem("username") || "---";
@@ -29,7 +29,7 @@ async function loadStudents() {
 function showError(msg) {
   const tbody = document.getElementById("studentTable");
   if (tbody)
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--danger);padding:32px">${escapeHtml(msg)}</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">${escapeHtml(msg)}</td></tr>`;
 }
 
 function escapeHtml(str) {
@@ -42,7 +42,7 @@ function escapeHtml(str) {
 function renderTable(students) {
   const tbody = document.getElementById("studentTable");
   if (!students.length) {
-    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có học sinh nào</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có học sinh nào</td></tr>`;
     return;
   }
   tbody.innerHTML = students.map((s, i) => `
@@ -52,7 +52,6 @@ function renderTable(students) {
       <td><strong>${escapeHtml(s.full_name)}</strong></td>
       <td>${escapeHtml(s.class_name)}</td>
       <td style="font-size:13px">${escapeHtml(s.phone) || "—"}</td>
-      <td style="font-size:13px">${escapeHtml(s.plate_number) || "—"}</td>
       <td>
         <div class="action-btns">
           <button class="btn-sm edit-btn"   onclick="openEdit(${s.id})"><i class="fa-solid fa-pen"></i></button>
@@ -76,7 +75,7 @@ function filterStudents() {
 function openModal() {
   document.getElementById("modalTitle").textContent = "Thêm học sinh";
   document.getElementById("editingId").value = "";
-  ["studentCode","fullName","className","faceLabel","phone","plateNumber"].forEach(id => {
+  ["studentCode","fullName","className","faceLabel","phone"].forEach(id => {
     document.getElementById(id).value = "";
   });
   document.getElementById("studentModal").classList.add("open");
@@ -93,7 +92,6 @@ function openEdit(id) {
   document.getElementById("className").value          = s.class_name;
   document.getElementById("faceLabel").value          = s.face_label || "";
   document.getElementById("phone").value              = s.phone || "";
-  document.getElementById("plateNumber").value        = s.plate_number || "";
   document.getElementById("studentModal").classList.add("open");
 }
 
@@ -110,7 +108,6 @@ async function saveStudent() {
     class_name:   document.getElementById("className").value.trim(),
     face_label:   document.getElementById("faceLabel").value.trim() || null,
     phone:        document.getElementById("phone").value.trim(),
-    plate_number: document.getElementById("plateNumber").value.trim(),
   };
 
   if (!body.student_code || !body.full_name || !body.class_name) {
@@ -131,7 +128,7 @@ async function saveStudent() {
   } catch { alert("Lỗi kết nối server"); }
 }
 
-const createStudent = saveStudent; // alias cho compatibility
+const createStudent = saveStudent;
 
 async function deleteStudent(id) {
   const s    = allStudents.find(x => x.id === id);
@@ -145,5 +142,3 @@ async function deleteStudent(id) {
 }
 
 loadStudents();
-
-

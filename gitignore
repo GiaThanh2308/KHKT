@@ -1,0 +1,39 @@
+# =====================================================
+# .gitignore — KHÔNG đưa các file nhạy cảm lên git
+# =====================================================
+
+# ── Biến môi trường & API key ─────────────────────
+.env
+*.env
+!.env.example       # file mẫu thì được commit
+
+# ── Database ──────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Face recognition database ─────────────────────
+*.pkl
+resources/face_database.pkl
+
+# ── Python ────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+*.egg-info/
+
+# ── Ảnh khuôn mặt học sinh (dữ liệu cá nhân) ─────
+resources/known_faces/
+
+# ── Hệ điều hành ──────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── IDE ───────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
