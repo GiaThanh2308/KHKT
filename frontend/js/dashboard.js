@@ -218,5 +218,3 @@ loadClassScores();
 loadRecentViolations();
 
 
-
-

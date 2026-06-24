@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập — AI School</title>
+    <link rel="stylesheet" href="css/style.css" />
+    <link rel="stylesheet" href="css/login.css" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+    />
+  </head>
+  <body>
+    <div class="login-page">
+      <!-- Bên trái: ảnh / branding (ẩn trên điện thoại) -->
+      <div class="login-panel-left">
+        <div class="slider">
+          <div class="slide active">
+            <img src="images/truong.jfif" alt="" />
+          </div>
+
+          <div class="slide">
+            <img src="images/sukien.jpg" alt="" />
+          </div>
+        </div>
+
+        <div class="login-panel-left__overlay"></div>
+
+        <div class="login-panel-left__content">
+          <div class="login-panel-left__icon">
+            <i class="fa-solid fa-school"></i>
+          </div>
+
+          <h2>AI School</h2>
+          <p>Hệ thống AI quản lý học sinh thông minh</p>
+
+          <div class="login-panel-left__dots">
+            <span class="dot dot--active"></span>
+            <span class="dot"></span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Bên phải: form đăng nhập -->
+      <div class="login-panel-right">
+        <div class="login-logo-mini">
+          <i class="fa-solid fa-school"></i>
+          <span>AI School</span>
+        </div>
+
+        <div class="login-card">
+          <h1>Chào mừng trở lại</h1>
+          <p class="login-subtitle">Đăng nhập để tiếp tục</p>
+
+          <div class="input-group">
+            <label for="username">Username</label>
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-user input-icon"></i>
+              <input
+                type="text"
+                id="username"
+                placeholder="Nhập username"
+                onkeydown="if (event.key === 'Enter') login();"
+              />
+            </div>
+          </div>
+
+          <div class="input-group">
+            <label for="password">Mật khẩu</label>
+            <div class="input-icon-wrap">
+              <i class="fa-solid fa-lock input-icon"></i>
+              <input
+                type="password"
+                id="password"
+                placeholder="Nhập mật khẩu"
+                onkeydown="if (event.key === 'Enter') login();"
+              />
+            </div>
+          </div>
+
+          <button onclick="login()">
+            <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
+          </button>
+
+          <p id="loginMessage"></p>
+        </div>
+
+        <p class="login-footer">AI School © 2025</p>
+      </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/login.js"></script>
+  </body>
+  <script>
+    const slides = document.querySelectorAll(".slide");
+    const dots = document.querySelectorAll(".dot");
+
+    let current = 0;
+
+    function nextSlide() {
+      slides[current].classList.remove("active");
+      dots[current].classList.remove("dot--active");
+
+      current = (current + 1) % slides.length;
+
+      slides[current].classList.add("active");
+      dots[current].classList.add("dot--active");
+    }
+
+    setInterval(nextSlide, 5000);
+  </script>
+</html>

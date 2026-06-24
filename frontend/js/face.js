@@ -300,5 +300,3 @@ loadStats();
 loadRecentViolations();
 
 
-
-

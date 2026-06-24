@@ -14,13 +14,11 @@ function getApiBase() {
   const manual = localStorage.getItem("api_base");
   if (manual) return manual.replace(/\/$/, "");
 
-  // Dev: frontend mở qua Live Server (cổng 5500/5501) -> backend chạy riêng cổng 8000
-  if (location.port === "5500" || location.port === "5501") {
+  if (location.hostname && location.hostname !== "") {
     return `${location.protocol}//${location.hostname}:8000`;
   }
 
-  // Production (vd: Hugging Face Spaces) -> frontend & backend cùng 1 origin/port
-  return "";
+  return "http://127.0.0.1:8000";
 }
 
 const API_BASE = getApiBase();
@@ -187,8 +185,6 @@ function escapeNav(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
-
 
 
 

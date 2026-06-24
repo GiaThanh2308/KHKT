@@ -177,5 +177,3 @@ function searchStudent() {
     if (badge) badge.textContent = "Đã kết nối";
   }
 })();
-
-

@@ -33,7 +33,7 @@ from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 PROJECT_ROOT       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESOURCE_DIR       = os.getenv("RESOURCE_DIR", os.path.join(PROJECT_ROOT, "resources"))
 FACE_DATABASE_PATH = os.path.abspath(
-    os.getenv("FACE_DATABASE_PATH", os.path.join(PROJECT_ROOT, "face_database.pkl"))
+    os.getenv("FACE_DATABASE_PATH", os.path.join(RESOURCE_DIR, "face_database.pkl"))
 )
 KNOWN_FACES_DIR    = os.path.abspath(
     os.getenv("KNOWN_FACES_DIR", os.path.join(RESOURCE_DIR, "known_faces"))
