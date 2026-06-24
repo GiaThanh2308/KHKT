@@ -1,4 +1,4 @@
-// scan.js — Trang quét vi phạm (nhận diện khuôn mặt & biển số xe)
+// scan.js — Trang quét vi phạm (nhận diện khuôn mặt)
 requireAuth();
 
 document.getElementById("usernameDisplay").textContent =
@@ -16,34 +16,38 @@ function switchMode(mode) {
   document.getElementById("tabFace").classList.toggle("active",  mode === "face");
   document.getElementById("tabPlate").classList.toggle("active", mode === "plate");
 
-  // Scan frame
   document.getElementById("scanFrameFace").classList.toggle("visible",  mode === "face");
   document.getElementById("scanFramePlate").classList.toggle("visible", mode === "plate");
 
-  // Mode hint
   const hint = document.getElementById("modeHint");
   if (mode === "face") {
-    hint.className   = "cam-mode-hint face-hint";
-    hint.innerHTML   = `<i class="fa-solid fa-face-viewfinder"></i> Hướng camera vào khuôn mặt`;
+    hint.className = "cam-mode-hint face-hint";
+    hint.innerHTML = `<i class="fa-solid fa-face-viewfinder"></i> Hướng camera vào khuôn mặt`;
   } else {
-    hint.className   = "cam-mode-hint plate-hint";
-    hint.innerHTML   = `<i class="fa-solid fa-car"></i> Hướng camera vào biển số xe`;
+    hint.className = "cam-mode-hint plate-hint";
+    hint.innerHTML = `<i class="fa-solid fa-car"></i> Tính năng đang phát triển`;
   }
 
-  // Nút scan
   const btnScan = document.getElementById("btnScan");
   if (mode === "face") {
     btnScan.className = "btn-cam-scan";
     btnScan.innerHTML = `<i class="fa-solid fa-face-viewfinder"></i> Nhận diện`;
+    btnScan.disabled  = false;
     btnScan.onclick   = captureAndRecognize;
   } else {
+    // FIX: disable nút quét khi ở chế độ biển số (tính năng chưa hoàn thiện)
     btnScan.className = "btn-cam-scan plate";
-    btnScan.innerHTML = `<i class="fa-solid fa-car"></i> Quét biển số`;
-    btnScan.onclick   = captureAndScanPlate;
+    btnScan.innerHTML = `<i class="fa-solid fa-car"></i> Sắp ra mắt`;
+    btnScan.disabled  = true;
+    btnScan.onclick   = null;
   }
 
-  // Reset kết quả
-  setResultEmpty();
+  // FIX: hiển thị thông báo rõ ràng khi chuyển sang chế độ biển số
+  if (mode === "plate") {
+    setResultComingSoon();
+  } else {
+    setResultEmpty();
+  }
 }
 
 // ── Camera ──────────────────────────────────────────────────────────────────
@@ -94,21 +98,18 @@ async function captureAndRecognize() {
   }, "image/jpeg", 0.9);
 }
 
-async function captureAndScanPlate() {
-  if (!stream) { showToast("Hãy bật camera trước", "error"); return; }
-  showToast("Tính năng quét biển số đang phát triển", "error");
-}
-
 async function uploadImage() {
   const file = document.getElementById("imageInput").files[0];
   if (!file) return;
+
+  if (currentMode === "plate") {
+    showToast("Tính năng quét biển số đang được phát triển", "error");
+    return;
+  }
+
   const fd = new FormData();
   fd.append("file", file);
-  if (currentMode === "face") {
-    await recognizeFace(fd);
-  } else {
-    showToast("Tính năng quét biển số đang phát triển", "error");
-  }
+  await recognizeFace(fd);
 }
 
 // ── Face recognition ─────────────────────────────────────────────────────────
@@ -142,6 +143,17 @@ function setResultEmpty() {
       <i class="fa-solid fa-user-slash"></i>
       <p>Chưa nhận diện</p>
       <small>Hướng camera vào học sinh rồi nhấn Nhận diện</small>
+    </div>`;
+}
+
+// FIX: thêm hàm hiển thị "coming soon" rõ ràng cho chế độ biển số
+function setResultComingSoon() {
+  currentStudentId = null;
+  document.getElementById("resultArea").innerHTML = `
+    <div class="result-empty">
+      <i class="fa-solid fa-car" style="color:#f59e0b"></i>
+      <p style="color:#f59e0b">Tính năng đang phát triển</p>
+      <small>Nhận diện biển số xe sẽ có trong phiên bản tiếp theo</small>
     </div>`;
 }
 
@@ -255,5 +267,3 @@ function showToast(msg, type = "success") {
   document.body.appendChild(t);
   setTimeout(() => t.remove(), 3500);
 }
-
-

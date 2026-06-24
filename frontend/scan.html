@@ -69,12 +69,30 @@
         border: none;
         background: transparent;
         transform: none !important;
+        position: relative;
       }
       .mode-tab:hover { color: #94a3b8; background: transparent; transform: none !important; }
       .mode-tab.active {
         background: #2563eb;
         color: white;
         box-shadow: 0 2px 8px rgba(37,99,235,0.4);
+      }
+      /* FIX: tab biển số có badge "Sắp ra mắt" */
+      .mode-tab.plate-tab.active {
+        background: #92400e;
+        box-shadow: 0 2px 8px rgba(146,64,14,0.4);
+      }
+      .coming-soon-badge {
+        position: absolute;
+        top: -6px; right: 4px;
+        background: #f59e0b;
+        color: #1f2937;
+        font-size: 9px;
+        font-weight: 800;
+        padding: 2px 5px;
+        border-radius: 6px;
+        letter-spacing: 0.3px;
+        text-transform: uppercase;
       }
       .mode-tab i { font-size: 15px; }
 
@@ -117,7 +135,7 @@
         position: relative;
       }
 
-      /* Plate frame — wider rectangle */
+      /* Plate frame */
       .scan-frame-box.plate-frame {
         width: 280px;
         height: 140px;
@@ -156,7 +174,7 @@
         50% { top: calc(100% - 22px); }
       }
 
-      /* Mode hint label inside camera */
+      /* Mode hint label */
       .cam-mode-hint {
         position: absolute;
         top: 10px; left: 50%; transform: translateX(-50%);
@@ -199,9 +217,10 @@
       .btn-cam-stop  { background: #374151; color: #9ca3af; }
       .btn-cam-stop:hover { background: #4b5563; }
 
-      /* Plate scan button — amber */
-      .btn-cam-scan.plate { background: #d97706; }
-      .btn-cam-scan.plate:hover { background: #b45309; }
+      /* FIX: nút disabled khi ở chế độ biển số */
+      .btn-cam-scan.plate { background: #374151; color: #6b7280; cursor: not-allowed; }
+      .btn-cam-scan.plate:hover { background: #374151; transform: none !important; }
+      .btn-cam-scan:disabled { background: #374151 !important; color: #6b7280 !important; cursor: not-allowed !important; }
 
       /* ── Upload ── */
       .upload-alt {
@@ -248,9 +267,6 @@
       .student-card-top.face-top {
         background: linear-gradient(135deg, #1e40af, #2563eb);
       }
-      .student-card-top.plate-top {
-        background: linear-gradient(135deg, #92400e, #d97706);
-      }
       .student-avatar {
         width: 64px; height: 64px;
         border-radius: 50%;
@@ -267,34 +283,6 @@
         font-size: 12px;
         font-weight: 700;
         flex-shrink: 0;
-      }
-
-      /* Plate result card */
-      .plate-result-card {
-        background: #1e293b;
-        border-radius: 16px;
-        overflow: hidden;
-      }
-      .plate-number-display {
-        background: linear-gradient(135deg, #78350f, #d97706);
-        padding: 24px 20px;
-        text-align: center;
-      }
-      .plate-number-text {
-        font-size: 32px;
-        font-weight: 900;
-        color: white;
-        letter-spacing: 4px;
-        font-family: 'Courier New', monospace;
-        text-shadow: 0 2px 8px rgba(0,0,0,0.3);
-      }
-      .plate-number-label {
-        color: rgba(255,255,255,0.7);
-        font-size: 12px;
-        font-weight: 600;
-        margin-top: 4px;
-        text-transform: uppercase;
-        letter-spacing: 1px;
       }
 
       .student-info {
@@ -393,10 +381,6 @@
       .nav-item i { font-size: 20px; }
       .nav-item.active { color: #3b82f6; }
 
-      @media (min-width: 600px) {
-        .bottom-nav { position: fixed; }
-      }
-
       canvas { display: none; }
     </style>
   </head>
@@ -417,12 +401,14 @@
       </header>
 
       <!-- Mode Tabs -->
+      <!-- FIX: tab biển số có badge "Sắp ra mắt" để giám khảo biết tính năng đang phát triển -->
       <div class="mode-tabs">
         <button class="mode-tab active" id="tabFace" onclick="switchMode('face')">
           <i class="fa-solid fa-face-viewfinder"></i> Khuôn mặt
         </button>
-        <button class="mode-tab" id="tabPlate" onclick="switchMode('plate')">
+        <button class="mode-tab plate-tab" id="tabPlate" onclick="switchMode('plate')">
           <i class="fa-solid fa-car"></i> Biển số xe
+          <span class="coming-soon-badge">Sắp ra mắt</span>
         </button>
       </div>
 
@@ -443,7 +429,7 @@
           </div>
         </div>
 
-        <!-- Plate frame (wider rectangle) -->
+        <!-- Plate frame -->
         <div class="scan-frame" id="scanFramePlate">
           <div class="scan-frame-box plate-frame">
             <span></span>
@@ -472,7 +458,7 @@
         </button>
       </div>
 
-      <!-- Upload alternative -->
+      <!-- Upload -->
       <div class="upload-alt">
         <label>
           <i class="fa-solid fa-image"></i>
@@ -481,7 +467,7 @@
         </label>
       </div>
 
-      <!-- Result block -->
+      <!-- Result -->
       <div class="result-block">
         <div id="resultArea">
           <div class="result-empty">
@@ -508,7 +494,3 @@
     <script src="js/scan.js"></script>
   </body>
 </html>
-
-
-
-

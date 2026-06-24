@@ -1,5 +1,5 @@
 // chatbot.js — Giao diện chatbot AI
-// requireAuth() được gọi từ chatbot.html, không cần gọi lại ở đây
+// requireAuth() được gọi từ chatbot.html
 
 const chatHistory = []; // lưu lịch sử hội thoại để gửi lên backend
 
@@ -44,14 +44,79 @@ async function sendMessage() {
   }
 }
 
+/**
+ * FIX: render đúng cấu trúc .msg > .msg-avatar + .msg-bubble
+ * Trước đây dùng el.textContent = text nên mất hết markdown và CSS không áp dụng.
+ * Nay dùng innerHTML với markdownToHtml() để hiển thị bullet list từ bot.
+ */
 function appendMsg(text, cls) {
   const box = document.getElementById("chatMessages");
   const el  = document.createElement("div");
-  el.className   = "msg " + cls;
-  el.textContent = text;
+  el.className = "msg " + cls;
+
+  const avatarIcon = cls === "bot"
+    ? '<i class="fa-solid fa-robot"></i>'
+    : '<i class="fa-solid fa-user"></i>';
+
+  // FIX: bot message dùng innerHTML với markdown parser, user message escape HTML
+  const bubbleContent = cls === "bot"
+    ? markdownToHtml(text)
+    : escapeHtml(text);
+
+  el.innerHTML = `
+    <div class="msg-avatar">${avatarIcon}</div>
+    <div class="msg-bubble">${bubbleContent}</div>`;
+
   box.appendChild(el);
   box.scrollTop = box.scrollHeight;
   return el;
+}
+
+/**
+ * Chuyển markdown đơn giản sang HTML:
+ * - **text** → <strong>text</strong>
+ * - `code` → <code>code</code>
+ * - Dòng bắt đầu bằng • hoặc - → <ul><li>...</li></ul>
+ * - Dòng trắng → ngắt đoạn
+ */
+function markdownToHtml(text) {
+  // Escape HTML trước để tránh XSS
+  let html = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // Bold
+  html = html.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+  // Inline code
+  html = html.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // Xử lý bullet list: gom các dòng bắt đầu bằng - hoặc •
+  const lines = html.split("\n");
+  const result = [];
+  let inList = false;
+
+  for (const line of lines) {
+    const bulletMatch = line.match(/^[\s]*[-•]\s+(.+)/);
+    if (bulletMatch) {
+      if (!inList) { result.push("<ul>"); inList = true; }
+      result.push(`<li>${bulletMatch[1]}</li>`);
+    } else {
+      if (inList) { result.push("</ul>"); inList = false; }
+      result.push(line === "" ? "<br>" : `<p>${line}</p>`);
+    }
+  }
+  if (inList) result.push("</ul>");
+
+  // Bỏ <p></p> rỗng
+  return result.join("").replace(/<p><\/p>/g, "");
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
 function appendTyping() {
@@ -97,4 +162,18 @@ function searchStudent() {
   quickAsk(`Tìm học sinh: ${q}`);
 }
 
-
+// Load context badge
+(async function loadContextBadge() {
+  try {
+    const res = await apiFetch("/stats/summary");
+    if (!res.ok) return;
+    const data = await res.json();
+    const badge = document.getElementById("contextBadge");
+    if (badge) {
+      badge.textContent = `${data.total_students} học sinh · ${data.total_violations} vi phạm`;
+    }
+  } catch (e) {
+    const badge = document.getElementById("contextBadge");
+    if (badge) badge.textContent = "Đã kết nối";
+  }
+})();

@@ -8,36 +8,45 @@ from datetime import datetime
 
 
 class AdvancedFaceRecognitionSystem:
-    def __init__(self):
-        self.database    = FaceDatabase()
+    def __init__(self, database_path="face_database.pkl"):
+        # FIX: truyền database_path vào FaceDatabase ngay từ đầu
+        # tránh tình trạng FaceDatabase load từ path mặc định sai rồi load lại lần 2
+        self.database    = FaceDatabase(database_path=database_path)
         self.app         = FaceAnalysis(name="buffalo_l")
         self.app.prepare(ctx_id=0, det_size=(480, 480))
         self.faiss_index = FaissIndex(dim=512)
-        # Không gọi load_database() ở đây vì FaceDatabase.__init__ đã tự gọi rồi
 
     def build_ann_index(self):
-        if len(self.database.known_encodings) == 0:
+        """
+        Xây dựng FAISS index từ face_metadata (nhiều embeddings/người → độ chính xác cao hơn).
+        Fallback về known_encodings (mean vectors) nếu metadata trống.
+        """
+        if not self.database.known_names:
             print("⚠️ Chưa có dữ liệu khuôn mặt để tạo index.")
             return
 
         all_embs  = []
         all_names = []
+
+        # Ưu tiên dùng tất cả embeddings gốc từ metadata
         for name, info in self.database.face_metadata.items():
-            if "embeddings" in info:
+            if "embeddings" in info and info["embeddings"]:
                 for vec in info["embeddings"]:
                     all_embs.append(vec)
                     all_names.append(name)
 
+        # FIX: fallback rõ ràng — chỉ dùng mean vectors nếu metadata trống
         if not all_embs:
-            all_embs  = self.database.known_encodings
-            all_names = self.database.known_names
+            print("⚠️ face_metadata trống, fallback về mean vectors.")
+            all_embs  = list(self.database.known_encodings)
+            all_names = list(self.database.known_names)
 
         if not all_embs:
             print("⚠️ Không có embeddings để tạo ANN index.")
             return
 
         self.faiss_index.build_index(all_embs, all_names)
-        print(f"✅ FAISS index rebuilt từ {len(all_embs)} vectors của {len(set(all_names))} người")
+        print(f"✅ FAISS index rebuilt: {len(all_embs)} vectors, {len(set(all_names))} người")
 
     def add_person(self, name, folder_path):
         if not os.path.exists(folder_path):
@@ -71,10 +80,14 @@ class AdvancedFaceRecognitionSystem:
             "num_images": len(encs),
         }
         self.database.save_database()
-        self.faiss_index.build_index(self.database.known_encodings, self.database.known_names)
+        self.build_ann_index()
         print(f"✅ Đã thêm {name} vào database ({len(encs)} ảnh)")
 
     def rescan_known_faces(self, main_dir="known_faces"):
+        """
+        Quét lại thư mục known_faces, thêm người chưa có trong database.
+        FIX: lưu đầy đủ face_metadata cho người mới (trước đây bị thiếu).
+        """
         known_set  = set(self.database.known_names)
         new_people = []
 
@@ -84,7 +97,7 @@ class AdvancedFaceRecognitionSystem:
                 continue
 
             for person_name in os.listdir(class_path):
-                folder     = os.path.join(class_path, person_name)
+                folder = os.path.join(class_path, person_name)
                 if not os.path.isdir(folder):
                     continue
 
@@ -112,17 +125,18 @@ class AdvancedFaceRecognitionSystem:
                     mean_vec /= np.linalg.norm(mean_vec) + 1e-10
                     self.database.known_names.append(label_name)
                     self.database.known_encodings.append(mean_vec.astype(np.float32))
+                    # FIX: lưu face_metadata đầy đủ để build_ann_index() dùng được
                     self.database.face_metadata[label_name] = {
                         "embeddings": [e.astype(np.float32) for e in encs],
                         "added":      datetime.now().isoformat(),
                         "num_images": len(encs),
                     }
                     new_people.append(label_name)
-                    print(f"✅ Đã thêm {label_name}")
+                    print(f"✅ Đã thêm {label_name} ({len(encs)} ảnh)")
 
         if new_people:
             self.database.save_database()
-            self.faiss_index.build_index(self.database.known_encodings, self.database.known_names)
+            self.build_ann_index()
             print(f"💾 Database cập nhật với {len(new_people)} người mới.")
         else:
             print("📂 Không có người mới nào được thêm.")
@@ -156,7 +170,7 @@ class AdvancedFaceRecognitionSystem:
                     print("❌ Không đọc được ảnh:", img_path)
                     continue
                 faces = self.app.get(img)
-                if len(faces) == 0:
+                if not faces:
                     print("⚠️ Không phát hiện khuôn mặt:", img_path)
                     continue
                 for face in faces:
@@ -165,23 +179,26 @@ class AdvancedFaceRecognitionSystem:
             if encodings:
                 mean_encoding  = np.mean(encodings, axis=0)
                 mean_encoding /= np.linalg.norm(mean_encoding) + 1e-10
-                people.append((label_name, mean_encoding.astype(np.float32)))
-                print(f"✅ {label_name}: {len(encodings)} ảnh → lưu 1 vector")
+                people.append((label_name, mean_encoding.astype(np.float32), encodings))
+                print(f"✅ {label_name}: {len(encodings)} ảnh → lưu 1 mean vector + {len(encodings)} embeddings gốc")
             else:
                 print(f"❌ {label_name}: không có encoding hợp lệ")
 
         if people:
             self.database.known_names     = []
             self.database.known_encodings = []
-            for name, vec in people:
+            self.database.face_metadata   = {}
+            for name, vec, encs in people:
                 self.database.known_names.append(name)
                 self.database.known_encodings.append(vec)
+                self.database.face_metadata[name] = {
+                    "embeddings": [e.astype(np.float32) for e in encs],
+                    "added":      datetime.now().isoformat(),
+                    "num_images": len(encs),
+                }
             self.database.save_database()
+            self.build_ann_index()
             print(f"💾 Đã lưu database: {len(people)} người")
-            self.faiss_index.build_index(
-                self.database.known_encodings,
-                self.database.known_names,
-            )
         else:
             print("❌ Không có dữ liệu khuôn mặt nào được tạo!")
 
@@ -189,7 +206,7 @@ class AdvancedFaceRecognitionSystem:
         faces   = self.app.get(img)
         results = []
         for face in faces:
-            embedding  = face.embedding
+            embedding  = face.embedding.copy()
             embedding /= np.linalg.norm(embedding) + 1e-10
             name, score = self.faiss_index.search(embedding)
             results.append({"name": name, "score": float(score)})
@@ -199,7 +216,8 @@ class AdvancedFaceRecognitionSystem:
         faces = self.app.get(frame)
         for face in faces:
             bbox      = face.bbox.astype(int)
-            embedding = face.embedding / (np.linalg.norm(face.embedding) + 1e-10)
+            embedding = face.embedding.copy()
+            embedding /= np.linalg.norm(embedding) + 1e-10
             name, score = self.faiss_index.search(embedding)
             color = (0, 255, 0) if score > 0.5 else (0, 0, 255)
             cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
@@ -207,5 +225,3 @@ class AdvancedFaceRecognitionSystem:
             cv2.putText(frame, label, (bbox[0], bbox[1] - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
         return frame
-
-

@@ -29,7 +29,7 @@ from backend.auth import (
 )
 from core.AdvancedFaceRecognitionSystem import AdvancedFaceRecognitionSystem
 
-# ── Khởi tạo các biến cấu hình ───────────────────────────────────────────────
+# ── Cấu hình đường dẫn ───────────────────────────────────────────────────────
 PROJECT_ROOT       = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RESOURCE_DIR       = os.getenv("RESOURCE_DIR", os.path.join(PROJECT_ROOT, "resources"))
 FACE_DATABASE_PATH = os.path.abspath(
@@ -41,25 +41,16 @@ KNOWN_FACES_DIR    = os.path.abspath(
 FACE_IMAGE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
 GROQ_MODEL = os.getenv("GROQ_MODEL", "llama-3.3-70b-versatile")
 
-# ── Khởi tạo system TRƯỚC khi tạo app để lifespan dùng được ─────────────────
-system = AdvancedFaceRecognitionSystem()
-if os.path.exists(FACE_DATABASE_PATH):
-    system.database.database_path = FACE_DATABASE_PATH
-    system.database.load_database()
+# FIX: truyền FACE_DATABASE_PATH vào constructor ngay — tránh load 2 lần từ 2 path khác nhau
+system = AdvancedFaceRecognitionSystem(database_path=FACE_DATABASE_PATH)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     print("🚀 Loading face recognition model...")
     if system.database.known_encodings:
-        system.faiss_index.build_index(
-            system.database.known_encodings,
-            system.database.known_names,
-        )
-        if system.faiss_index.index is not None:
-            print("✅ FAISS loaded")
-        if system.database.face_metadata:
-            print("✅ Model loaded")
+        system.build_ann_index()
+        print(f"✅ FAISS loaded ({len(system.database.known_names)} người)")
     else:
         print("⚠️ Database khuôn mặt đang trống")
     yield
@@ -67,7 +58,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="AI School API", lifespan=lifespan)
 
-# ── CORS linh động ────────────────────────────────────────────────────────────
+# ── CORS ──────────────────────────────────────────────────────────────────────
 _raw_origins = os.getenv("ALLOWED_ORIGINS", "")
 
 if _raw_origins.strip() == "*":
@@ -122,7 +113,6 @@ def _first_face_image(folder_path: str) -> Optional[str]:
 
 
 def _normalize(text: str) -> str:
-    """Chuẩn hoá chuỗi: bỏ dấu tiếng Việt, lowercase, bỏ khoảng trắng thừa."""
     import unicodedata
     nfkd = unicodedata.normalize("NFKD", text)
     ascii_text = "".join(c for c in nfkd if not unicodedata.combining(c))
@@ -130,22 +120,10 @@ def _normalize(text: str) -> str:
 
 
 def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
-    """
-    Tìm file ảnh đầu tiên của một người trong KNOWN_FACES_DIR.
-
-    Cấu trúc thư mục được hỗ trợ:
-      known_faces/<ClassName>/<PersonName>/img.jpg   ← label = "PersonName_ClassName"
-      known_faces/<PersonName>/img.jpg               ← label = "PersonName"
-      known_faces/<PersonName_ClassName>/img.jpg     ← label khớp tên thư mục
-
-    So sánh dùng unicode normalization để bỏ dấu tiếng Việt,
-    tránh lỗi "GiaThành" ≠ "giathành" do casefold().
-    """
     label = (face_label or "").strip()
     if not label or not os.path.isdir(KNOWN_FACES_DIR):
         return None
 
-    # Tách person_name và class_name từ label (tách tại dấu _ cuối cùng)
     person_name: Optional[str] = None
     class_name:  Optional[str] = None
     if "_" in label:
@@ -155,12 +133,10 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
     person_norm = _normalize(person_name) if person_name else None
     class_norm  = _normalize(class_name)  if class_name  else None
 
-    # Ưu tiên: thư mục person nằm trong thư mục class (khớp cả hai)
     priority: list[str] = []
     fallback: list[str] = []
 
     for root, dirs, files in os.walk(KNOWN_FACES_DIR):
-        # Chỉ xét thư mục có ảnh
         has_images = any(f.lower().endswith(FACE_IMAGE_EXTENSIONS) for f in files)
         if not has_images:
             continue
@@ -168,23 +144,19 @@ def get_face_image_path(face_label: Optional[str]) -> Optional[str]:
         folder_norm = _normalize(os.path.basename(root))
         parent_norm = _normalize(os.path.basename(os.path.dirname(root)))
 
-        # Khớp hoàn hảo: person_name đúng + class_name đúng
         if person_norm and class_norm:
             if folder_norm == person_norm and parent_norm == class_norm:
                 priority.insert(0, root)
                 continue
 
-        # Khớp label đầy đủ (ví dụ folder tên "GiaThành_11A1")
         if folder_norm == label_norm:
             priority.append(root)
             continue
 
-        # Khớp riêng person_name
         if person_norm and folder_norm == person_norm:
             fallback.append(root)
             continue
 
-        # Khớp riêng label (không có class)
         if not person_norm and folder_norm == label_norm:
             fallback.append(root)
 
@@ -689,5 +661,3 @@ VI PHẠM GẦN ĐÂY NHẤT:
         raise HTTPException(status_code=502, detail="Groq trả về response không hợp lệ")
 
     return {"reply": reply}
-
-
