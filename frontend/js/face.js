@@ -1,21 +1,21 @@
-     // FIX: dùng requireAuth() từ api.js
+// FIX: dùng requireAuth() từ api.js
 requireAuth();
-document.getElementById("usernameDisplay").textContent = localStorage.getItem("username");
+document.getElementById("usernameDisplay").textContent =
+  localStorage.getItem("username");
 
 const video = document.getElementById("video");
-let stream  = null;
+let stream = null;
 
 // ─── Load stats on page load ─────────────────────────────────
 async function loadStats() {
   try {
-    // FIX: dùng apiFetch (tự gắn token)
-    const res  = await apiFetch("/stats/summary");
+    const res = await apiFetch("/stats/summary");
     if (!res.ok) return;
     const data = await res.json();
     document.getElementById("statStudents").textContent = data.total_students;
-    document.getElementById("statToday").textContent    = data.today_violations;
-    document.getElementById("statWeek").textContent     = data.week_violations;
-    document.getElementById("statMonth").textContent    = data.month_violations;
+    document.getElementById("statToday").textContent = data.today_violations;
+    document.getElementById("statWeek").textContent = data.week_violations;
+    document.getElementById("statMonth").textContent = data.month_violations;
   } catch (e) {
     console.warn("Không load được stats:", e);
   }
@@ -23,7 +23,7 @@ async function loadStats() {
 
 async function loadRecentViolations() {
   try {
-    const res  = await apiFetch("/violations?limit=5");
+    const res = await apiFetch("/violations?limit=5");
     if (!res.ok) return;
     const data = await res.json();
     const tbody = document.getElementById("recentViolations");
@@ -55,7 +55,6 @@ function formatDate(isoStr) {
   );
 }
 
-// FIX: helper escape HTML dùng nội bộ trong file này
 function escHtml(str) {
   if (str == null) return "";
   return String(str)
@@ -84,7 +83,7 @@ function renderProfileAvatar(student) {
       <img
         src="${escHtml(imageUrl)}"
         alt="${escHtml(student.full_name)}"
-        onerror="console.error('Failed image:', this.src); console.error('Natural size:', this.naturalWidth, this.naturalHeight);"
+        onerror="console.error('Failed image:', this.src);"
       />
     </div>`;
 }
@@ -106,8 +105,8 @@ function stopCamera() {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
   }
-  video.style.display   = "none";
-  video.srcObject       = null;
+  video.style.display = "none";
+  video.srcObject = null;
   document.getElementById("cameraPlaceholder").style.display = "block";
 }
 
@@ -117,8 +116,7 @@ async function captureAndRecognize() {
     return;
   }
   const canvas = document.getElementById("canvas");
-  const ctx    = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+  canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
 
   canvas.toBlob(async (blob) => {
     const formData = new FormData();
@@ -143,10 +141,9 @@ async function sendRecognize(formData) {
   profile.innerHTML = `<div class="empty-profile"><i class="fa-solid fa-spinner fa-spin"></i><p>Đang nhận diện...</p></div>`;
 
   try {
-    // FIX: dùng apiFetch để gắn token tự động
     const response = await apiFetch("/recognize-face", {
       method: "POST",
-      body:   formData,
+      body: formData,
     });
 
     if (!response.ok) {
@@ -175,11 +172,14 @@ function renderStudentProfile(data) {
     return;
   }
 
-  const s        = data.faces[0];
+  const s = data.faces[0];
   const accuracy = Math.round(s.score * 100);
   const accColor =
-    accuracy >= 80 ? "var(--success)" :
-    accuracy >= 60 ? "var(--warning)" : "var(--danger)";
+    accuracy >= 80
+      ? "var(--success)"
+      : accuracy >= 60
+        ? "var(--warning)"
+        : "var(--danger)";
 
   if (!s.id) {
     profile.innerHTML = `
@@ -190,7 +190,6 @@ function renderStudentProfile(data) {
     return;
   }
 
-  // FIX: escape dữ liệu từ server khi render vào innerHTML
   profile.innerHTML = `
     <div class="profile-card">
       ${renderProfileAvatar(s)}
@@ -200,9 +199,8 @@ function renderStudentProfile(data) {
         <div class="profile-info-row"><span>Mã học sinh: </span><span>${escHtml(s.student_code)}</span></div>
         <div class="profile-info-row"><span>Lớp: </span><span>${escHtml(s.class_name)}</span></div>
         <div class="profile-info-row"><span>SĐT: </span><span>${escHtml(s.phone) || "—"}</span></div>
-        <div class="profile-info-row"><span>Biển số xe: </span><span>${escHtml(s.plate_number) || "—"}</span></div>
         <div class="profile-info-row">
-          <span>Độ chính xác:</span>  
+          <span>Độ chính xác:</span>
           <span style="color:${accColor};font-weight:700">${accuracy}%</span>
         </div>
         <div class="accuracy-bar">
@@ -235,20 +233,18 @@ function renderStudentProfile(data) {
 // ─── Save violation ───────────────────────────────────────────
 async function saveViolation(studentId) {
   const violationType = document.getElementById("violationType").value;
-  const note          = document.getElementById("violationNote").value;
+  const note = document.getElementById("violationNote").value;
 
   try {
     const res = await apiFetch("/violations", {
       method: "POST",
-      body:   JSON.stringify({
-        student_id:     studentId,
+      body: JSON.stringify({
+        student_id: studentId,
         violation_type: violationType,
         note,
       }),
     });
 
-    // FIX: kiểm tra res.ok thay vì chỉ kiểm tra data.id
-    // Trước đây: nếu server trả lỗi 422/500, code im lặng hoàn toàn
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       showToast("❌ " + (err.detail || "Lỗi khi lưu vi phạm"), true);
@@ -268,18 +264,18 @@ function showToast(msg, isError = false) {
   const toast = document.createElement("div");
   toast.textContent = msg;
   Object.assign(toast.style, {
-    position:     "fixed",
-    bottom:       "24px",
-    right:        "24px",
-    background:   isError ? "var(--danger)" : "#1f2937",
-    color:        "white",
-    padding:      "14px 20px",
+    position: "fixed",
+    bottom: "24px",
+    right: "24px",
+    background: isError ? "var(--danger)" : "#1f2937",
+    color: "white",
+    padding: "14px 20px",
     borderRadius: "12px",
-    fontSize:     "14px",
-    fontWeight:   "600",
-    zIndex:       "9999",
-    boxShadow:    "0 8px 24px rgba(0,0,0,0.2)",
-    fontFamily:   "inherit",
+    fontSize: "14px",
+    fontWeight: "600",
+    zIndex: "9999",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    fontFamily: "inherit",
   });
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
@@ -288,5 +284,3 @@ function showToast(msg, isError = false) {
 // Init
 loadStats();
 loadRecentViolations();
-
-

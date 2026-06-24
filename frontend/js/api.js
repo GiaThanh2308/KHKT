@@ -3,9 +3,25 @@
  * Role hệ thống:
  *   - "teacher" / "admin" : truy cập tất cả trang
  *   - "student"           : chỉ truy cập index.html (nhận diện)
+ *
+ * ── FIX: API_BASE linh động ──────────────────────
+ * Thứ tự ưu tiên:
+ *   1. localStorage["api_base"]  → có thể tự đặt thủ công qua DevTools
+ *   2. Cùng host với trang web   → tự động khớp khi mở từ bất kỳ IP nào
+ *   3. Fallback http://127.0.0.1:8000
  */
+function getApiBase() {
+  const manual = localStorage.getItem("api_base");
+  if (manual) return manual.replace(/\/$/, "");
 
-const API_BASE = "http://127.0.0.1:8000";
+  if (location.hostname && location.hostname !== "") {
+    return `${location.protocol}//${location.hostname}:8000`;
+  }
+
+  return "http://127.0.0.1:8000";
+}
+
+const API_BASE = getApiBase();
 
 async function apiFetch(path, options = {}) {
   const token = localStorage.getItem("access_token");
@@ -54,17 +70,13 @@ function requireTeacher() {
 
 /**
  * Render sidebar + mobile-nav động theo role.
- * Gọi sau khi DOM đã load; truyền tên trang hiện tại để highlight menu active.
- *
- * @param {string} activePage  - "dashboard" | "index" | "students" |
- *                               "chatbot"
+ * @param {string} activePage  - "dashboard" | "index" | "students" | "chatbot"
  */
 function renderNav(activePage) {
   const role = localStorage.getItem("role") || "student";
   const username = localStorage.getItem("username") || "---";
   const isTeacher = ["admin", "teacher"].includes(role);
 
-  // ── Danh sách menu ──────────────────────────────────────────
   const allItems = [
     {
       key: "dashboard",
@@ -79,7 +91,7 @@ function renderNav(activePage) {
       icon: "fa-user-graduate",
       label: "Học sinh",
     },
-        {
+    {
       key: "chatbot",
       href: "chatbot.html",
       icon: "fa-robot",
@@ -87,19 +99,14 @@ function renderNav(activePage) {
     },
   ];
 
-  // Student chỉ thấy "Nhận diện"
   const visibleItems = isTeacher
     ? allItems
     : allItems.filter((item) => item.key === "index");
 
-  // Mobile nav: teacher thấy tối đa 5 mục (bỏ Dashboard trên mobile cho gọn)
   const mobileItems = isTeacher
-    ? allItems.filter((i) =>
-        ["index", "students", "chatbot"].includes(i.key),
-      )
+    ? allItems.filter((i) => ["index", "students", "chatbot"].includes(i.key))
     : visibleItems;
 
-  // ── Build sidebar HTML ──────────────────────────────────────
   const sidebarEl = document.getElementById("sidebar");
   if (sidebarEl) {
     const menuHtml = visibleItems
@@ -131,7 +138,6 @@ function renderNav(activePage) {
       </button>`;
   }
 
-  // ── Build mobile-nav HTML ────────────────────────────────────
   const mobileNavEl = document.getElementById("mobileNav");
   if (mobileNavEl) {
     const mobileHtml = mobileItems
@@ -144,16 +150,15 @@ function renderNav(activePage) {
       )
       .join("");
 
-    const logoutItem = `
+    mobileNavEl.innerHTML =
+      mobileHtml +
+      `
       <span class="mobile-item" onclick="logout()">
         <i class="fa-solid fa-right-from-bracket"></i>
         <span>Thoát</span>
       </span>`;
-
-    mobileNavEl.innerHTML = mobileHtml + logoutItem;
   }
 
-  // ── Cập nhật user-box trên topbar (nếu có) ──────────────────
   const userDisplay = document.getElementById("usernameDisplay");
   if (userDisplay) userDisplay.textContent = username;
 
@@ -180,7 +185,3 @@ function escapeNav(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
-
-
-
