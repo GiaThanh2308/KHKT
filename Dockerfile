@@ -20,4 +20,4 @@ EXPOSE 7860
 
 RUN mkdir -p /app/resources && chmod -R 777 /app
 
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "7860"]
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7860"]
