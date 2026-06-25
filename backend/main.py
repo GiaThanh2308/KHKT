@@ -698,8 +698,9 @@ def import_from_folders(
         khoi_path = os.path.join(KNOWN_FACES_DIR, khoi_name)
         if not os.path.isdir(khoi_path):
             continue
-        # Bỏ qua folder không phải khoi (ví dụ file lẻ)
-        if not khoi_name.lower().startswith("khoi"):
+        # Bỏ qua folder không phải khối (hỗ trợ cả "Khối" và "khoi")
+        khoi_norm = _normalize(khoi_name)
+        if not (khoi_norm.startswith("khoi") or khoi_name.lower().startswith("khối")):
             continue
 
         for class_name in sorted(os.listdir(khoi_path)):
