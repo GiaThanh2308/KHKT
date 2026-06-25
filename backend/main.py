@@ -673,6 +673,87 @@ VI PHẠM GẦN ĐÂY NHẤT:
     return {"reply": reply}
 
 
+# ─── IMPORT HỌC SINH TỪ THƯ MỤC known_faces ─────────────────────────────────
+
+@app.post("/import-from-folders")
+def import_from_folders(
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(get_current_user),
+):
+    """
+    Quét thư mục resources/known_faces/khoi XX/TenLop/TenHocSinh/
+    và tự động tạo hồ sơ học sinh trong database.
+    Cấu trúc: known_faces / khoi 10 / 10A1 / Nguyen Van A / *.jpg
+    face_label = "Nguyen Van A_10A1"
+    """
+    if not os.path.isdir(KNOWN_FACES_DIR):
+        raise HTTPException(status_code=404, detail=f"Không tìm thấy thư mục: {KNOWN_FACES_DIR}")
+
+    created = []
+    skipped = []
+    errors  = []
+
+    # Duyệt: khoi_folder / class_folder / student_folder
+    for khoi_name in sorted(os.listdir(KNOWN_FACES_DIR)):
+        khoi_path = os.path.join(KNOWN_FACES_DIR, khoi_name)
+        if not os.path.isdir(khoi_path):
+            continue
+        # Bỏ qua folder không phải khoi (ví dụ file lẻ)
+        if not khoi_name.lower().startswith("khoi"):
+            continue
+
+        for class_name in sorted(os.listdir(khoi_path)):
+            class_path = os.path.join(khoi_path, class_name)
+            if not os.path.isdir(class_path):
+                continue
+
+            for student_name in sorted(os.listdir(class_path)):
+                student_path = os.path.join(class_path, student_name)
+                if not os.path.isdir(student_path):
+                    continue
+
+                # Kiểm tra có ít nhất 1 ảnh trong folder không
+                has_image = any(
+                    f.lower().endswith(FACE_IMAGE_EXTENSIONS)
+                    for f in os.listdir(student_path)
+                )
+                if not has_image:
+                    skipped.append(f"{student_name} ({class_name}) — không có ảnh")
+                    continue
+
+                face_label = f"{student_name}_{class_name}"
+
+                # Đã tồn tại face_label → bỏ qua
+                existing = db.query(Student).filter(Student.face_label == face_label).first()
+                if existing:
+                    skipped.append(f"{student_name} ({class_name}) — đã có hồ sơ")
+                    continue
+
+                try:
+                    import uuid
+                    auto_code = f"AUTO_{uuid.uuid4().hex[:8].upper()}"
+                    new_student = Student(
+                        student_code=auto_code,
+                        full_name=student_name,
+                        class_name=class_name,
+                        face_label=face_label,
+                        phone=None,
+                    )
+                    db.add(new_student)
+                    db.commit()
+                    created.append(f"{student_name} ({class_name})")
+                except Exception as e:
+                    db.rollback()
+                    errors.append(f"{student_name} ({class_name}): {str(e)}")
+
+    return {
+        "message": f"Import hoàn tất: {len(created)} thêm mới, {len(skipped)} bỏ qua, {len(errors)} lỗi",
+        "created": created,
+        "skipped": skipped,
+        "errors":  errors,
+    }
+
+
 # ─── FRONTEND (HTML/CSS/JS) ───────────────────────────────────────────────────
 # FIX: mount "/" SAU CÙNG, sau toàn bộ route API ở trên — nếu mount trước,
 # StaticFiles sẽ chặn mọi request và route API phía dưới sẽ không bao giờ

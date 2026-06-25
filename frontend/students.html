@@ -29,6 +29,9 @@
             <button class="add-btn" onclick="openModal()">
               <i class="fa-solid fa-plus"></i> Thêm học sinh
             </button>
+            <button class="btn-success" onclick="importFromFolders()" id="importBtn">
+              <i class="fa-solid fa-folder-open"></i> Import từ thư mục
+            </button>
           </div>
         </header>
 
@@ -128,6 +131,33 @@
       requireAuth();
       requireTeacher();
       renderNav("students");
+
+      async function importFromFolders() {
+        const btn = document.getElementById("importBtn");
+        if (!confirm("Hệ thống sẽ quét thư mục known_faces và tạo hồ sơ cho toàn bộ học sinh. Tiếp tục?")) return;
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang import...';
+
+        try {
+          const res = await apiFetch("/import-from-folders", { method: "POST" });
+          const data = await res.json();
+
+          if (!res.ok) {
+            alert("Lỗi: " + (data.detail || "Không xác định"));
+            return;
+          }
+
+          alert(data.message +
+            (data.errors.length ? "\n\nLỗi:\n" + data.errors.join("\n") : ""));
+          loadStudents();
+        } catch (e) {
+          alert("Không kết nối được server");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i class="fa-solid fa-folder-open"></i> Import từ thư mục';
+        }
+      }
     </script>
   </body>
 </html>
