@@ -14,6 +14,15 @@ function getApiBase() {
   const manual = localStorage.getItem("api_base");
   if (manual) return manual.replace(/\/$/, "");
 
+  // Trên Hugging Face: backend cùng origin, không có port riêng
+  if (
+    location.hostname.includes("hf.space") ||
+    location.hostname.includes("huggingface.co")
+  ) {
+    return `${location.protocol}//${location.hostname}`;
+  }
+
+  // Local dev
   if (location.hostname && location.hostname !== "") {
     return `${location.protocol}//${location.hostname}:8000`;
   }
@@ -185,7 +194,3 @@ function escapeNav(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;");
 }
-
-
-
-
