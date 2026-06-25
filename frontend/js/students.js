@@ -20,10 +20,90 @@ async function loadStudents() {
     document.getElementById("classCount").textContent   = classes.size;
     document.getElementById("faceCount").textContent    = withFace;
 
-    renderTable(allStudents);
+    // Cập nhật bộ lọc lớp
+    buildClassFilter(classes);
+    filterStudents();
   } catch {
     showError("Không kết nối được server");
   }
+}
+
+function buildClassFilter(classes) {
+  const khoisSet = new Set();
+  const classMap = {}; // khoi → [lop]
+
+  [...classes].sort().forEach(cls => {
+    const khoi = cls.replace(/[^0-9]/g, "").slice(0, 2); // "10A1" → "10"
+    if (!classMap[khoi]) classMap[khoi] = [];
+    classMap[khoi].push(cls);
+    khoisSet.add(khoi);
+  });
+
+  // Render filter bar
+  const bar = document.getElementById("classFilterBar");
+  if (!bar) return;
+
+  let html = `<button class="filter-btn active" onclick="setKhoiFilter('', this)">Tất cả</button>`;
+  [...khoisSet].sort().forEach(khoi => {
+    html += `<button class="filter-btn" onclick="setKhoiFilter('${khoi}', this)">Khối ${khoi}</button>`;
+  });
+  bar.innerHTML = html;
+
+  // Render lớp dropdown
+  const lopSel = document.getElementById("lopFilter");
+  if (!lopSel) return;
+  lopSel.innerHTML = `<option value="">Tất cả lớp</option>`;
+  Object.keys(classMap).sort().forEach(khoi => {
+    const group = document.createElement("optgroup");
+    group.label = `Khối ${khoi}`;
+    classMap[khoi].sort().forEach(cls => {
+      const opt = document.createElement("option");
+      opt.value = cls;
+      opt.textContent = cls;
+      group.appendChild(opt);
+    });
+    lopSel.appendChild(group);
+  });
+}
+
+let activeKhoi = "";
+
+function setKhoiFilter(khoi, btn) {
+  activeKhoi = khoi;
+  document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  // Reset lớp filter
+  const lopSel = document.getElementById("lopFilter");
+  if (lopSel) lopSel.value = "";
+  filterStudents();
+}
+
+function filterStudents() {
+  const q      = (document.getElementById("searchInput")?.value || "").toLowerCase();
+  const lopVal = document.getElementById("lopFilter")?.value || "";
+
+  let filtered = allStudents;
+
+  // Lọc khối
+  if (activeKhoi) {
+    filtered = filtered.filter(s => (s.class_name || "").startsWith(activeKhoi));
+  }
+
+  // Lọc lớp cụ thể
+  if (lopVal) {
+    filtered = filtered.filter(s => s.class_name === lopVal);
+  }
+
+  // Tìm kiếm text
+  if (q) {
+    filtered = filtered.filter(s =>
+      (s.full_name    || "").toLowerCase().includes(q) ||
+      (s.student_code || "").toLowerCase().includes(q) ||
+      (s.class_name   || "").toLowerCase().includes(q)
+    );
+  }
+
+  renderTable(filtered);
 }
 
 function showError(msg) {
@@ -60,16 +140,6 @@ function renderTable(students) {
       </td>
     </tr>
   `).join("");
-}
-
-function filterStudents() {
-  const q = document.getElementById("searchInput").value.toLowerCase();
-  const filtered = allStudents.filter(s =>
-    (s.full_name    || "").toLowerCase().includes(q) ||
-    (s.student_code || "").toLowerCase().includes(q) ||
-    (s.class_name   || "").toLowerCase().includes(q)
-  );
-  renderTable(filtered);
 }
 
 function openModal() {
@@ -142,7 +212,3 @@ async function deleteStudent(id) {
 }
 
 loadStudents();
-
-
-
-

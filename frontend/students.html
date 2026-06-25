@@ -7,6 +7,46 @@
     <link rel="stylesheet" href="css/style.css" />
     <link rel="stylesheet" href="css/students.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+    <style>
+      .filter-bar {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+        margin-bottom: 12px;
+      }
+      .filter-btn {
+        background: var(--gray-100);
+        color: var(--gray-800);
+        border: none;
+        padding: 7px 16px;
+        border-radius: 20px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        transition: all 0.15s;
+        width: auto;
+      }
+      .filter-btn:hover { background: var(--gray-200); transform: none; }
+      .filter-btn.active { background: var(--primary); color: white; }
+      .search-row {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      .search-row .search-box { flex: 1; min-width: 200px; }
+      #lopFilter {
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        border: 1.5px solid var(--gray-200);
+        font-size: 14px;
+        font-family: inherit;
+        outline: none;
+        background: white;
+        min-width: 140px;
+      }
+      #lopFilter:focus { border-color: var(--primary); }
+    </style>
   </head>
 
   <body>
@@ -59,15 +99,25 @@
           </div>
         </section>
 
-        <section class="search-section">
-          <div class="search-box">
-            <i class="fa-solid fa-magnifying-glass"></i>
-            <input
-              type="text"
-              placeholder="Tìm kiếm học sinh..."
-              id="searchInput"
-              oninput="filterStudents()"
-            />
+        <section class="search-section" style="flex-direction:column;align-items:stretch;gap:10px;">
+          <!-- Bộ lọc khối -->
+          <div class="filter-bar" id="classFilterBar">
+            <button class="filter-btn active" onclick="setKhoiFilter('', this)">Tất cả</button>
+          </div>
+          <!-- Tìm kiếm + lọc lớp -->
+          <div class="search-row">
+            <div class="search-box">
+              <i class="fa-solid fa-magnifying-glass"></i>
+              <input
+                type="text"
+                placeholder="Tìm kiếm học sinh..."
+                id="searchInput"
+                oninput="filterStudents()"
+              />
+            </div>
+            <select id="lopFilter" onchange="filterStudents()">
+              <option value="">Tất cả lớp</option>
+            </select>
           </div>
         </section>
 
@@ -161,7 +211,3 @@
     </script>
   </body>
 </html>
-
-
-
-
