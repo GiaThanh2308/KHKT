@@ -18,7 +18,7 @@ from pydantic import BaseModel
 
 load_dotenv()
 
-from backend.database.db import engine, SessionLocal
+from backend.database.db import engine, SessionLocal, push_db
 from backend.database.models import Base, Student, User, Violation
 from backend.schemas.student import (
     StudentCreate, StudentUpdate, ViolationCreate, ChatRequest
@@ -305,6 +305,7 @@ def create_student(
     db.add(new_student)
     db.commit()
     db.refresh(new_student)
+    push_db()
     return {"message": "Đã thêm học sinh", "id": new_student.id}
 
 
@@ -340,6 +341,7 @@ def update_student(
         db_student.face_label = face_label
 
     db.commit()
+    push_db()
     return {"message": "Đã cập nhật học sinh"}
 
 
@@ -354,6 +356,7 @@ def delete_student(
         raise HTTPException(status_code=404, detail="Không tìm thấy học sinh")
     db.delete(student)
     db.commit()
+    push_db()
     return {"message": "Đã xóa học sinh"}
 
 
@@ -378,6 +381,7 @@ def create_violation(
     db.add(new_v)
     db.commit()
     db.refresh(new_v)
+    push_db()
     return {"message": "Đã lưu vi phạm", "id": new_v.id}
 
 
@@ -724,8 +728,11 @@ def import_from_folders(
 
                 face_label = f"{student_name}_{class_name}"
 
-                # Đã tồn tại face_label → bỏ qua
-                existing = db.query(Student).filter(Student.face_label == face_label).first()
+                # Đã tồn tại → bỏ qua (check cả face_label lẫn tên+lớp)
+                existing = db.query(Student).filter(
+                    (Student.face_label == face_label) |
+                    ((Student.full_name == student_name) & (Student.class_name == class_name))
+                ).first()
                 if existing:
                     skipped.append(f"{student_name} ({class_name}) — đã có hồ sơ")
                     continue
@@ -747,6 +754,7 @@ def import_from_folders(
                     db.rollback()
                     errors.append(f"{student_name} ({class_name}): {str(e)}")
 
+    push_db()
     return {
         "message": f"Import hoàn tất: {len(created)} thêm mới, {len(skipped)} bỏ qua, {len(errors)} lỗi",
         "created": created,
