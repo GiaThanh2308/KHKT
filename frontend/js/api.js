@@ -14,20 +14,17 @@ function getApiBase() {
   const manual = localStorage.getItem("api_base");
   if (manual) return manual.replace(/\/$/, "");
 
-  // Trên Hugging Face: backend cùng origin, không có port riêng
-  if (
-    location.hostname.includes("hf.space") ||
-    location.hostname.includes("huggingface.co")
-  ) {
-    return `${location.protocol}//${location.hostname}`;
+  const isLocal =
+    location.hostname === "localhost" ||
+    location.hostname === "127.0.0.1" ||
+    location.protocol === "file:";
+
+  if (isLocal) {
+    return "http://127.0.0.1:8000";
   }
 
-  // Local dev
-  if (location.hostname && location.hostname !== "") {
-    return `${location.protocol}//${location.hostname}:8000`;
-  }
-
-  return "http://127.0.0.1:8000";
+  // Khi deploy: backend cùng origin với frontend, KHÔNG có :8000
+  return `${location.protocol}//${location.host}`;
 }
 
 const API_BASE = getApiBase();
