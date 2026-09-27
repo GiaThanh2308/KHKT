@@ -6,7 +6,8 @@ document.getElementById("usernameDisplay").textContent =
 
 const video = document.getElementById("video");
 let stream = null;
-
+let cameras = [];
+let currentCameraIndex = 0;
 // ── Load stats ───────────────────────────────────────────────────────────────
 async function loadStats() {
   try {
