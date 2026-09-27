@@ -11,9 +11,11 @@
  *   3. Fallback http://127.0.0.1:8000
  */
 function getApiBase() {
+  // 1. Ưu tiên giá trị cấu hình thủ công trong localStorage
   const manual = localStorage.getItem("api_base");
   if (manual) return manual.replace(/\/$/, "");
 
+  // 2. Phán đoán có phải môi trường local không
   const isLocal =
     location.hostname === "localhost" ||
     location.hostname === "127.0.0.1" ||
@@ -23,7 +25,7 @@ function getApiBase() {
     return "http://127.0.0.1:8000";
   }
 
-  // Khi deploy: backend cùng origin với frontend, KHÔNG có :8000
+  // 3. Môi trường triển khai: backend và frontend cùng domain, không thêm cổng
   return `${location.protocol}//${location.host}`;
 }
 
