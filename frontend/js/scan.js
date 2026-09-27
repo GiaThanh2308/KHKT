@@ -8,6 +8,7 @@ const video = document.getElementById("video");
 let stream           = null;
 let currentStudentId = null;
 let currentMode      = "face"; // "face" | "plate"
+let currentFacingMode = "environment"; // "environment" = cam sau | "user" = cam trước
 
 // ── Chuyển chế độ nhận diện ─────────────────────────────────────────────────
 function switchMode(mode) {
@@ -35,14 +36,12 @@ function switchMode(mode) {
     btnScan.disabled  = false;
     btnScan.onclick   = captureAndRecognize;
   } else {
-    // FIX: disable nút quét khi ở chế độ biển số (tính năng chưa hoàn thiện)
     btnScan.className = "btn-cam-scan plate";
     btnScan.innerHTML = `<i class="fa-solid fa-car"></i> Sắp ra mắt`;
     btnScan.disabled  = true;
     btnScan.onclick   = null;
   }
 
-  // FIX: hiển thị thông báo rõ ràng khi chuyển sang chế độ biển số
   if (mode === "plate") {
     setResultComingSoon();
   } else {
@@ -53,8 +52,14 @@ function switchMode(mode) {
 // ── Camera ──────────────────────────────────────────────────────────────────
 async function startCamera() {
   try {
+    // Dừng stream cũ nếu có
+    if (stream) {
+      stream.getTracks().forEach(t => t.stop());
+      stream = null;
+    }
+
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: "environment", width: 640, height: 480 },
+      video: { facingMode: currentFacingMode, width: 640, height: 480 },
     });
     video.srcObject     = stream;
     video.style.display = "block";
@@ -68,6 +73,13 @@ async function startCamera() {
     } else {
       document.getElementById("scanFramePlate").classList.add("visible");
     }
+
+    // Hiện nút lật camera
+    document.getElementById("btnFlip").style.display = "flex";
+
+    // Cập nhật icon nút flip theo hướng camera hiện tại
+    updateFlipIcon();
+
   } catch (err) {
     showToast("Không mở được camera: " + err.message, "error");
   }
@@ -84,6 +96,25 @@ function stopCamera() {
   document.getElementById("scanFrameFace").classList.remove("visible");
   document.getElementById("scanFramePlate").classList.remove("visible");
   document.getElementById("modeHint").classList.remove("visible");
+
+  // Ẩn nút lật camera khi tắt
+  document.getElementById("btnFlip").style.display = "none";
+}
+
+// ── Lật camera (đổi cam trước / cam sau) ────────────────────────────────────
+async function flipCamera() {
+  currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+  await startCamera();
+}
+
+function updateFlipIcon() {
+  const btn = document.getElementById("btnFlip");
+  if (!btn) return;
+  if (currentFacingMode === "user") {
+    btn.title = "Đang dùng camera trước — nhấn để đổi sang camera sau";
+  } else {
+    btn.title = "Đang dùng camera sau — nhấn để đổi sang camera trước";
+  }
 }
 
 // ── Chụp ảnh & nhận diện ────────────────────────────────────────────────────
@@ -146,7 +177,6 @@ function setResultEmpty() {
     </div>`;
 }
 
-// FIX: thêm hàm hiển thị "coming soon" rõ ràng cho chế độ biển số
 function setResultComingSoon() {
   currentStudentId = null;
   document.getElementById("resultArea").innerHTML = `

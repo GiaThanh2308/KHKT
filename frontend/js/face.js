@@ -1,3 +1,6 @@
+let stream = null;
+let cameras = [];
+let currentCameraIndex = 0;
 // face.js — Trang nhận diện khuôn mặt (index.html)
 requireAuth();
 
@@ -5,7 +8,7 @@ document.getElementById("usernameDisplay").textContent =
   localStorage.getItem("username");
 
 const video = document.getElementById("video");
-let stream  = null;
+let stream = null;
 
 // ── Load stats ───────────────────────────────────────────────────────────────
 async function loadStats() {
@@ -20,9 +23,9 @@ async function loadStats() {
       if (el) el.textContent = val;
     };
     safeSet("statStudents", data.total_students);
-    safeSet("statToday",    data.today_violations);
-    safeSet("statWeek",     data.week_violations);
-    safeSet("statMonth",    data.month_violations);
+    safeSet("statToday", data.today_violations);
+    safeSet("statWeek", data.week_violations);
+    safeSet("statMonth", data.month_violations);
   } catch (e) {
     console.warn("Không load được stats:", e);
   }
@@ -32,11 +35,13 @@ async function loadRecentViolations() {
   try {
     const res = await apiFetch("/violations?limit=5");
     if (!res.ok) return;
-    const data  = await res.json();
+    const data = await res.json();
     const tbody = document.getElementById("recentViolations");
     if (!data.length || !tbody) return;
 
-    tbody.innerHTML = data.map(v => `
+    tbody.innerHTML = data
+      .map(
+        (v) => `
       <tr>
         <td>
           <strong>${escHtml(v.student_name)}</strong>
@@ -46,7 +51,9 @@ async function loadRecentViolations() {
         <td><span class="badge badge-red">${escHtml(v.violation_type)}</span></td>
         <td style="color:var(--gray-400);font-size:13px">${formatDate(v.created_at)}</td>
       </tr>
-    `).join("");
+    `,
+      )
+      .join("");
   } catch (e) {
     console.warn("Không load được vi phạm:", e);
   }
@@ -55,7 +62,8 @@ async function loadRecentViolations() {
 function formatDate(isoStr) {
   const d = new Date(isoStr);
   return (
-    d.toLocaleDateString("vi-VN") + " " +
+    d.toLocaleDateString("vi-VN") +
+    " " +
     d.toLocaleTimeString("vi-VN", { hour: "2-digit", minute: "2-digit" })
   );
 }
@@ -63,11 +71,11 @@ function formatDate(isoStr) {
 function escHtml(str) {
   if (str == null) return "";
   return String(str)
-    .replace(/&/g,  "&amp;")
-    .replace(/</g,  "&lt;")
-    .replace(/>/g,  "&gt;")
-    .replace(/"/g,  "&quot;")
-    .replace(/'/g,  "&#39;");
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
 }
 
 function apiAssetUrl(path) {
@@ -106,30 +114,49 @@ function renderProfileAvatar(student) {
 // ── Camera ───────────────────────────────────────────────────────────────────
 async function startCamera() {
   try {
-    stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    video.srcObject    = stream;
+    if (cameras.length === 0) {
+      await loadCameras();
+    }
+
+    if (stream) {
+      stream.getTracks().forEach((track) => track.stop());
+    }
+
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        deviceId: {
+          exact: cameras[currentCameraIndex].deviceId,
+        },
+      },
+    });
+
+    video.srcObject = stream;
+
     video.style.display = "block";
-    document.getElementById("cameraPlaceholder").style.display = "none";
+    cameraPlaceholder.style.display = "none";
   } catch (err) {
-    alert("Không mở được camera: " + err.message);
+    console.error(err);
+    alert("Không mở được camera");
   }
 }
-
 function stopCamera() {
   if (stream) {
-    stream.getTracks().forEach(t => t.stop());
+    stream.getTracks().forEach((t) => t.stop());
     stream = null;
   }
   video.style.display = "none";
-  video.srcObject     = null;
+  video.srcObject = null;
   document.getElementById("cameraPlaceholder").style.display = "block";
 }
 
 async function captureAndRecognize() {
-  if (!stream) { alert("Hãy bật camera trước"); return; }
+  if (!stream) {
+    alert("Hãy bật camera trước");
+    return;
+  }
   const canvas = document.getElementById("canvas");
   canvas.getContext("2d").drawImage(video, 0, 0, canvas.width, canvas.height);
-  canvas.toBlob(async blob => {
+  canvas.toBlob(async (blob) => {
     const formData = new FormData();
     formData.append("file", blob, "capture.jpg");
     await sendRecognize(formData);
@@ -138,7 +165,10 @@ async function captureAndRecognize() {
 
 async function uploadImage() {
   const file = document.getElementById("imageInput").files[0];
-  if (!file) { alert("Chọn ảnh trước"); return; }
+  if (!file) {
+    alert("Chọn ảnh trước");
+    return;
+  }
   const formData = new FormData();
   formData.append("file", file);
   await sendRecognize(formData);
@@ -155,7 +185,7 @@ async function sendRecognize(formData) {
   try {
     const response = await apiFetch("/recognize-face", {
       method: "POST",
-      body:   formData,
+      body: formData,
     });
 
     if (!response.ok) {
@@ -192,12 +222,14 @@ function renderStudentProfile(data) {
     return;
   }
 
-  const s        = data.faces[0];
+  const s = data.faces[0];
   const accuracy = Math.round(s.score * 100);
   const accColor =
-    accuracy >= 80 ? "var(--success)" :
-    accuracy >= 60 ? "var(--warning)" :
-                     "var(--danger)";
+    accuracy >= 80
+      ? "var(--success)"
+      : accuracy >= 60
+        ? "var(--warning)"
+        : "var(--danger)";
 
   if (!s.id) {
     profile.innerHTML = `
@@ -251,12 +283,16 @@ function renderStudentProfile(data) {
 // ── Save violation ────────────────────────────────────────────────────────────
 async function saveViolation(studentId) {
   const violationType = document.getElementById("violationType").value;
-  const note          = document.getElementById("violationNote").value;
+  const note = document.getElementById("violationNote").value;
 
   try {
     const res = await apiFetch("/violations", {
       method: "POST",
-      body:   JSON.stringify({ student_id: studentId, violation_type: violationType, note }),
+      body: JSON.stringify({
+        student_id: studentId,
+        violation_type: violationType,
+        note,
+      }),
     });
 
     if (!res.ok) {
@@ -278,25 +314,58 @@ function showToast(msg, isError = false) {
   const toast = document.createElement("div");
   toast.textContent = msg;
   Object.assign(toast.style, {
-    position:     "fixed",
-    bottom:       "24px",
-    right:        "24px",
-    background:   isError ? "var(--danger)" : "#1f2937",
-    color:        "white",
-    padding:      "14px 20px",
+    position: "fixed",
+    bottom: "24px",
+    right: "24px",
+    background: isError ? "var(--danger)" : "#1f2937",
+    color: "white",
+    padding: "14px 20px",
     borderRadius: "12px",
-    fontSize:     "14px",
-    fontWeight:   "600",
-    zIndex:       "9999",
-    boxShadow:    "0 8px 24px rgba(0,0,0,0.2)",
-    fontFamily:   "inherit",
+    fontSize: "14px",
+    fontWeight: "600",
+    zIndex: "9999",
+    boxShadow: "0 8px 24px rgba(0,0,0,0.2)",
+    fontFamily: "inherit",
   });
   document.body.appendChild(toast);
   setTimeout(() => toast.remove(), 3000);
 }
+async function loadCameras() {
+  const devices = await navigator.mediaDevices.enumerateDevices();
 
+  cameras = devices.filter((device) => device.kind === "videoinput");
+
+  console.log("Cameras:", cameras);
+}
+async function switchCamera() {
+  if (cameras.length <= 1) {
+    alert("Thiết bị chỉ có 1 camera");
+    return;
+  }
+
+  currentCameraIndex++;
+
+  if (currentCameraIndex >= cameras.length) {
+    currentCameraIndex = 0;
+  }
+
+  await startCamera();
+
+  console.log("Đang dùng:", cameras[currentCameraIndex].label);
+}
+window.onload = async () => {
+  try {
+    const temp = await navigator.mediaDevices.getUserMedia({
+      video: true,
+    });
+
+    temp.getTracks().forEach((track) => track.stop());
+
+    await loadCameras();
+  } catch (err) {
+    console.log(err);
+  }
+};
 // ── Init ─────────────────────────────────────────────────────────────────────
 loadStats();
 loadRecentViolations();
-
-

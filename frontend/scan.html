@@ -77,7 +77,6 @@
         color: white;
         box-shadow: 0 2px 8px rgba(37,99,235,0.4);
       }
-      /* FIX: tab biển số có badge "Sắp ra mắt" */
       .mode-tab.plate-tab.active {
         background: #92400e;
         box-shadow: 0 2px 8px rgba(146,64,14,0.4);
@@ -201,7 +200,6 @@
         background: #1e293b;
       }
       .cam-controls button {
-        flex: 1;
         padding: 13px 0;
         border-radius: 12px;
         font-size: 14px;
@@ -210,14 +208,39 @@
         transform: none !important;
       }
       .cam-controls button:hover { transform: none !important; }
-      .btn-cam-start { background: #2563eb; color: white; }
+
+      .btn-cam-start { flex: 1; background: #2563eb; color: white; }
       .btn-cam-start:hover { background: #1d4ed8; }
-      .btn-cam-scan  { background: #16a34a; color: white; }
+      .btn-cam-scan  { flex: 1; background: #16a34a; color: white; }
       .btn-cam-scan:hover { background: #15803d; }
-      .btn-cam-stop  { background: #374151; color: #9ca3af; }
+      .btn-cam-stop  { flex: 1; background: #374151; color: #9ca3af; }
       .btn-cam-stop:hover { background: #4b5563; }
 
-      /* FIX: nút disabled khi ở chế độ biển số */
+      /* Nút lật camera */
+      .btn-cam-flip {
+        flex: 0 0 auto;
+        padding: 13px 16px !important;
+        background: #0f172a;
+        color: #94a3b8;
+        border: 1.5px solid #334155;
+        border-radius: 12px;
+        font-size: 18px;
+        display: none; /* ẩn mặc định, hiện khi camera bật */
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      .btn-cam-flip:hover {
+        background: #1e293b;
+        color: white;
+        border-color: #3b82f6;
+      }
+      .btn-cam-flip:active {
+        transform: rotate(180deg) !important;
+        transition: transform 0.3s;
+      }
+
       .btn-cam-scan.plate { background: #374151; color: #6b7280; cursor: not-allowed; }
       .btn-cam-scan.plate:hover { background: #374151; transform: none !important; }
       .btn-cam-scan:disabled { background: #374151 !important; color: #6b7280 !important; cursor: not-allowed !important; }
@@ -401,7 +424,6 @@
       </header>
 
       <!-- Mode Tabs -->
-      <!-- FIX: tab biển số có badge "Sắp ra mắt" để giám khảo biết tính năng đang phát triển -->
       <div class="mode-tabs">
         <button class="mode-tab active" id="tabFace" onclick="switchMode('face')">
           <i class="fa-solid fa-face-viewfinder"></i> Khuôn mặt
@@ -452,6 +474,10 @@
         </button>
         <button class="btn-cam-scan" id="btnScan" onclick="captureAndRecognize()">
           <i class="fa-solid fa-face-viewfinder"></i> Nhận diện
+        </button>
+        <!-- Nút lật camera: ẩn mặc định, hiện khi camera bật -->
+        <button class="btn-cam-flip" id="btnFlip" onclick="flipCamera()" title="Đổi camera trước / sau">
+          <i class="fa-solid fa-camera-rotate"></i>
         </button>
         <button class="btn-cam-stop" onclick="stopCamera()">
           <i class="fa-solid fa-stop"></i> Tắt
