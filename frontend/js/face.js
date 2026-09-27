@@ -1,6 +1,3 @@
-let stream = null;
-let cameras = [];
-let currentCameraIndex = 0;
 // face.js — Trang nhận diện khuôn mặt (index.html)
 requireAuth();
 
