@@ -4,7 +4,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
 
 _BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH   = os.path.join(_BASE_DIR, "school.db")
+DB_PATH = os.getenv("DB_PATH", os.path.join(_BASE_DIR, "school.db"))
 
 # ── HF Dataset sync ──────────────────────────────────────────────────────────
 HF_TOKEN        = os.getenv("HF_TOKEN", "")
