@@ -18,6 +18,4 @@ RUN pip install --no-cache-dir --upgrade pip && \
 COPY . .
 
 # Tạo admin mặc định nếu chưa có
-RUN python create_admin.py --username admin --password Admin@123 --role admin || true
-
-CMD ["sh", "-c", "uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
+CMD ["sh", "-c", "python create_admin.py --username admin --password Admin@123 --role admin || true; uvicorn backend.main:app --host 0.0.0.0 --port ${PORT:-8000}"]
