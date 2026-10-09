@@ -1,7 +1,9 @@
 __pycache__/
 *.pyc
 .env
-*.pkl
+venv/
+.venv/
 *.db
-resources/known_faces/
+.vscode/
+.idea/
 .DS_Store

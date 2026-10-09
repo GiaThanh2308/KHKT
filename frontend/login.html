@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="css/login.css" />
     <link
       rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.6.0/css/all.min.css"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
   </head>
   <body>
@@ -32,10 +32,7 @@
           </div>
           <h2>AI School</h2>
           <p>Hệ thống AI quản lý học sinh thông minh</p>
-          <div class="login-panel-left__dots">
-            <span class="dot dot--active"></span>
-            <span class="dot"></span>
-          </div>
+          <div class="login-panel-left__dots" id="dots"></div>
         </div>
       </div>
 
@@ -76,34 +73,41 @@
             </div>
           </div>
 
-          <button onclick="login()">
+          <button id="loginBtn" onclick="login()">
             <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
           </button>
 
           <p id="loginMessage"></p>
         </div>
 
-        <p class="login-footer">AI School © 2025</p>
+        <p class="login-footer">AI School</p>
       </div>
     </div>
 
     <script src="js/api.js"></script>
     <script src="js/login.js"></script>
     <script>
-      const slides = document.querySelectorAll(".slide");
-      const dots = document.querySelectorAll(".dot");
-
-      let current = 0;
-
-      function nextSlide() {
-        slides[current].classList.remove("active");
-        dots[current].classList.remove("dot--active");
-        current = (current + 1) % slides.length;
-        slides[current].classList.add("active");
-        dots[current].classList.add("dot--active");
-      }
-
-      setInterval(nextSlide, 5000);
+      // Slider ảnh bên trái: ảnh nào không tải được thì bỏ khỏi vòng lặp
+      document.querySelectorAll(".slide img").forEach((img) => {
+        img.addEventListener("error", () => img.closest(".slide").remove());
+      });
+      window.addEventListener("load", () => {
+        const slides = [...document.querySelectorAll(".slide")];
+        const dotsBox = document.getElementById("dots");
+        dotsBox.innerHTML = slides.map((_, i) => `<span class="dot${i ? "" : " dot--active"}"></span>`).join("");
+        if (!slides.length) return;
+        slides[0].classList.add("active");
+        if (slides.length < 2) return;
+        const dots = [...dotsBox.children];
+        let current = 0;
+        setInterval(() => {
+          slides[current].classList.remove("active");
+          dots[current].classList.remove("dot--active");
+          current = (current + 1) % slides.length;
+          slides[current].classList.add("active");
+          dots[current].classList.add("dot--active");
+        }, 5000);
+      });
     </script>
   </body>
 </html>

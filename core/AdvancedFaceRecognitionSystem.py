@@ -1,229 +1,128 @@
-import cv2
+"""AdvancedFaceRecognitionSystem — phát hiện + nhận diện khuôn mặt (InsightFace + FAISS)."""
 import os
+
+import cv2
 import numpy as np
 from insightface.app import FaceAnalysis
+
 from core.FaceDatabase import FaceDatabase
 from core.FaissIndex import FaissIndex
-from datetime import datetime
+
+IMAGE_EXTS = (".jpg", ".jpeg", ".png", ".webp")
+
+
+def _read_image(path: str):
+    """Đọc ảnh kể cả đường dẫn có dấu tiếng Việt (cv2.imread không đọc được trên Windows)."""
+    return cv2.imdecode(np.fromfile(path, dtype=np.uint8), cv2.IMREAD_COLOR)
+
+
+def iter_people(main_dir: str):
+    """Duyệt known_faces ở mọi độ sâu: thư mục nào có ảnh = 1 người.
+    Trả về (nhãn, thư mục, danh sách ảnh); nhãn = "<tên>_<lớp>" (lớp = thư mục cha)."""
+    for root, dirs, files in os.walk(main_dir):
+        dirs.sort()
+        images = sorted(f for f in files if f.lower().endswith(IMAGE_EXTS))
+        if images:
+            person = os.path.basename(root)
+            cls    = os.path.basename(os.path.dirname(root))
+            yield f"{person}_{cls}", root, images
 
 
 class AdvancedFaceRecognitionSystem:
-    def __init__(self, database_path="face_database.pkl"):
-        # FIX: truyền database_path vào FaceDatabase ngay từ đầu
-        # tránh tình trạng FaceDatabase load từ path mặc định sai rồi load lại lần 2
+    def __init__(self, database_path: str = "face_database.pkl"):
         self.database    = FaceDatabase(database_path=database_path)
-        self.app         = FaceAnalysis(name="buffalo_l")
+        self.app         = FaceAnalysis(name="buffalo_l", providers=["CPUExecutionProvider"])
         self.app.prepare(ctx_id=0, det_size=(480, 480))
         self.faiss_index = FaissIndex(dim=512)
 
+    # ── Index ────────────────────────────────────────────────
     def build_ann_index(self):
-        """
-        Xây dựng FAISS index từ face_metadata (nhiều embeddings/người → độ chính xác cao hơn).
-        Fallback về known_encodings (mean vectors) nếu metadata trống.
-        """
-        if not self.database.known_names:
+        """Dựng FAISS từ TẤT CẢ embedding gốc của mỗi người (chính xác hơn vector trung bình)."""
+        embs, names = [], []
+        for name, info in self.database.face_metadata.items():
+            for vec in info.get("embeddings", []):
+                embs.append(vec)
+                names.append(name)
+
+        if not embs:  # database cũ không có metadata → dùng vector trung bình
+            embs, names = list(self.database.known_encodings), list(self.database.known_names)
+        if not embs:
             print("⚠️ Chưa có dữ liệu khuôn mặt để tạo index.")
             return
+        self.faiss_index.build_index(embs, names)
 
-        all_embs  = []
-        all_names = []
-
-        # Ưu tiên dùng tất cả embeddings gốc từ metadata
-        for name, info in self.database.face_metadata.items():
-            if "embeddings" in info and info["embeddings"]:
-                for vec in info["embeddings"]:
-                    all_embs.append(vec)
-                    all_names.append(name)
-
-        # FIX: fallback rõ ràng — chỉ dùng mean vectors nếu metadata trống
-        if not all_embs:
-            print("⚠️ face_metadata trống, fallback về mean vectors.")
-            all_embs  = list(self.database.known_encodings)
-            all_names = list(self.database.known_names)
-
-        if not all_embs:
-            print("⚠️ Không có embeddings để tạo ANN index.")
-            return
-
-        self.faiss_index.build_index(all_embs, all_names)
-        print(f"✅ FAISS index rebuilt: {len(all_embs)} vectors, {len(set(all_names))} người")
-
-    def add_person(self, name, folder_path):
-        if not os.path.exists(folder_path):
-            print(f"❌ Không tìm thấy thư mục: {folder_path}")
-            return
-
+    # ── Xây / cập nhật database từ ảnh ───────────────────────
+    def _embeddings_from_images(self, folder: str, images) -> list:
         encs = []
-        for fn in os.listdir(folder_path):
-            if not fn.lower().endswith((".jpg", ".jpeg", ".png")):
-                continue
-            img_path = os.path.join(folder_path, fn)
-            img = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), cv2.IMREAD_COLOR)
+        for fn in images:
+            path = os.path.join(folder, fn)
+            img = _read_image(path)
             if img is None:
-                print(f"⚠️ Không đọc được ảnh: {img_path}")
+                print(f"❌ Không đọc được ảnh: {path}")
                 continue
             faces = self.app.get(img)
-            for f in faces:
-                encs.append(f.embedding)
+            if not faces:
+                print(f"⚠️ Không phát hiện khuôn mặt: {path}")
+            encs.extend(f.embedding for f in faces)
+        return encs
 
-        if not encs:
-            print(f"⚠️ Không tìm thấy khuôn mặt hợp lệ trong thư mục {folder_path}")
+    def build_database_from_images(self, main_dir: str = "known_faces"):
+        """Tạo lại TOÀN BỘ database từ thư mục ảnh (ghi đè)."""
+        print("🧠 Đang tạo database khuôn mặt từ ảnh...")
+        people = {}
+        for label, folder, images in iter_people(main_dir):
+            print(f"🔍 Đang xử lý: {label}")
+            encs = self._embeddings_from_images(folder, images)
+            if encs:
+                people[label] = encs
+            else:
+                print(f"❌ {label}: không có khuôn mặt hợp lệ")
+        if not people:
+            print("❌ Không có dữ liệu khuôn mặt nào được tạo! (giữ nguyên database cũ)")
             return
-
-        mean_vec  = np.mean(encs, axis=0)
-        mean_vec /= np.linalg.norm(mean_vec) + 1e-10
-        self.database.known_names.append(name)
-        self.database.known_encodings.append(mean_vec.astype(np.float32))
-        self.database.face_metadata[name] = {
-            "embeddings": [e.astype(np.float32) for e in encs],
-            "added":      datetime.now().isoformat(),
-            "num_images": len(encs),
-        }
+        self.database.clear()
+        for label, encs in people.items():
+            self.database.set_person(label, encs)
         self.database.save_database()
         self.build_ann_index()
-        print(f"✅ Đã thêm {name} vào database ({len(encs)} ảnh)")
 
-    def rescan_known_faces(self, main_dir="known_faces"):
-        """
-        Quét lại thư mục known_faces, thêm người chưa có trong database.
-        FIX: lưu đầy đủ face_metadata cho người mới (trước đây bị thiếu).
-        """
-        known_set  = set(self.database.known_names)
-        new_people = []
-
-        for class_name in os.listdir(main_dir):
-            class_path = os.path.join(main_dir, class_name)
-            if not os.path.isdir(class_path):
+    def rescan_known_faces(self, main_dir: str = "known_faces") -> list[str]:
+        """Chỉ thêm những người CHƯA có trong database. Trả về danh sách nhãn mới.
+        (Bản cũ giả định cấu trúc 2 cấp lớp/học sinh nên với khối/lớp/học sinh sẽ đặt nhãn sai.)"""
+        known, added = set(self.database.known_names), []
+        for label, folder, images in iter_people(main_dir):
+            if label in known:
                 continue
-
-            for person_name in os.listdir(class_path):
-                folder = os.path.join(class_path, person_name)
-                if not os.path.isdir(folder):
-                    continue
-
-                label_name = f"{person_name}_{class_name}"
-                if label_name in known_set:
-                    continue
-
-                encs = []
-                for fn in os.listdir(folder):
-                    if not fn.lower().endswith((".jpg", ".jpeg", ".png")):
-                        continue
-                    img_path = os.path.join(folder, fn)
-                    img = cv2.imdecode(
-                        np.fromfile(img_path, dtype=np.uint8),
-                        cv2.IMREAD_COLOR,
-                    )
-                    if img is None:
-                        continue
-                    faces = self.app.get(img)
-                    for f in faces:
-                        encs.append(f.embedding)
-
-                if encs:
-                    mean_vec  = np.mean(encs, axis=0)
-                    mean_vec /= np.linalg.norm(mean_vec) + 1e-10
-                    self.database.known_names.append(label_name)
-                    self.database.known_encodings.append(mean_vec.astype(np.float32))
-                    # FIX: lưu face_metadata đầy đủ để build_ann_index() dùng được
-                    self.database.face_metadata[label_name] = {
-                        "embeddings": [e.astype(np.float32) for e in encs],
-                        "added":      datetime.now().isoformat(),
-                        "num_images": len(encs),
-                    }
-                    new_people.append(label_name)
-                    print(f"✅ Đã thêm {label_name} ({len(encs)} ảnh)")
-
-        if new_people:
+            if self.database.set_person(label, self._embeddings_from_images(folder, images)):
+                added.append(label)
+                print(f"✅ Đã thêm {label}")
+        if added:
             self.database.save_database()
             self.build_ann_index()
-            print(f"💾 Database cập nhật với {len(new_people)} người mới.")
         else:
             print("📂 Không có người mới nào được thêm.")
+        return added
 
-    def build_database_from_images(self, main_dir="known_faces"):
-        print("🧠 Đang tạo database khuôn mặt từ ảnh...")
-        people = []
+    # ── Nhận diện ────────────────────────────────────────────
+    def _match(self, face):
+        emb = face.embedding.copy()
+        emb /= np.linalg.norm(emb) + 1e-10
+        return self.faiss_index.search(emb)
 
-        for root, dirs, files in os.walk(main_dir):
-            image_files = [
-                f for f in files
-                if f.lower().endswith((".jpg", ".jpeg", ".png"))
-            ]
-            if not image_files:
-                continue
-
-            person_name = os.path.basename(root)
-            class_name  = os.path.basename(os.path.dirname(root))
-            label_name  = f"{person_name}_{class_name}"
-            encodings   = []
-
-            print(f"🔍 Đang xử lý: {label_name}")
-
-            for filename in image_files:
-                img_path = os.path.join(root, filename)
-                img = cv2.imdecode(
-                    np.fromfile(img_path, dtype=np.uint8),
-                    cv2.IMREAD_COLOR,
-                )
-                if img is None:
-                    print("❌ Không đọc được ảnh:", img_path)
-                    continue
-                faces = self.app.get(img)
-                if not faces:
-                    print("⚠️ Không phát hiện khuôn mặt:", img_path)
-                    continue
-                for face in faces:
-                    encodings.append(face.embedding)
-
-            if encodings:
-                mean_encoding  = np.mean(encodings, axis=0)
-                mean_encoding /= np.linalg.norm(mean_encoding) + 1e-10
-                people.append((label_name, mean_encoding.astype(np.float32), encodings))
-                print(f"✅ {label_name}: {len(encodings)} ảnh → lưu 1 mean vector + {len(encodings)} embeddings gốc")
-            else:
-                print(f"❌ {label_name}: không có encoding hợp lệ")
-
-        if people:
-            self.database.known_names     = []
-            self.database.known_encodings = []
-            self.database.face_metadata   = {}
-            for name, vec, encs in people:
-                self.database.known_names.append(name)
-                self.database.known_encodings.append(vec)
-                self.database.face_metadata[name] = {
-                    "embeddings": [e.astype(np.float32) for e in encs],
-                    "added":      datetime.now().isoformat(),
-                    "num_images": len(encs),
-                }
-            self.database.save_database()
-            self.build_ann_index()
-            print(f"💾 Đã lưu database: {len(people)} người")
-        else:
-            print("❌ Không có dữ liệu khuôn mặt nào được tạo!")
-
-    def recognize_image(self, img):
-        faces   = self.app.get(img)
+    def recognize_image(self, img) -> list[dict]:
         results = []
-        for face in faces:
-            embedding  = face.embedding.copy()
-            embedding /= np.linalg.norm(embedding) + 1e-10
-            name, score = self.faiss_index.search(embedding)
+        for face in self.app.get(img):
+            name, score = self._match(face)
             results.append({"name": name, "score": float(score)})
         return results
 
     def process_frame(self, frame):
-        faces = self.app.get(frame)
-        for face in faces:
-            bbox      = face.bbox.astype(int)
-            embedding = face.embedding.copy()
-            embedding /= np.linalg.norm(embedding) + 1e-10
-            name, score = self.faiss_index.search(embedding)
-            color = (0, 255, 0) if score > 0.5 else (0, 0, 255)
-            cv2.rectangle(frame, (bbox[0], bbox[1]), (bbox[2], bbox[3]), color, 2)
-            label = f"{name} ({score:.2f})"
-            cv2.putText(frame, label, (bbox[0], bbox[1] - 10),
+        """Vẽ khung + tên lên frame (dùng cho chế độ camera trên máy tính, main.py)."""
+        for face in self.app.get(frame):
+            x1, y1, x2, y2 = face.bbox.astype(int)
+            name, score = self._match(face)
+            color = (0, 255, 0) if name != "unknown" else (0, 0, 255)
+            cv2.rectangle(frame, (x1, y1), (x2, y2), color, 2)
+            cv2.putText(frame, f"{name} ({score:.2f})", (x1, y1 - 10),
                         cv2.FONT_HERSHEY_SIMPLEX, 0.6, color, 2)
         return frame
-
-

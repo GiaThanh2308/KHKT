@@ -1,7 +1,11 @@
-// chatbot.js — Giao diện chatbot AI
-// requireAuth() được gọi từ chatbot.html
+// chatbot.js — giao diện chatbot AI (escapeHtml, apiFetch… lấy từ api.js)
 
-const chatHistory = []; // lưu lịch sử hội thoại để gửi lên backend
+requireAuth();
+requireTeacher();
+renderNav("chatbot");
+
+const chatHistory = []; // lịch sử hội thoại gửi lên backend
+const GREETING_HTML = document.getElementById("chatMessages").innerHTML; // lời chào có sẵn trong HTML, dùng lại khi xoá hội thoại
 
 async function sendMessage() {
   const input   = document.getElementById("chatInput");
@@ -27,6 +31,7 @@ async function sendMessage() {
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
       appendMsg("❌ Lỗi: " + (err.detail || "Server lỗi"), "bot");
+      chatHistory.pop(); // bỏ câu hỏi chưa được trả lời để lượt sau không bị 2 tin "user" liên tiếp
       return;
     }
 
@@ -38,17 +43,14 @@ async function sendMessage() {
   } catch (e) {
     typingEl.remove();
     appendMsg("❌ Không kết nối được server", "bot");
+    chatHistory.pop();
   } finally {
     sendBtn.disabled = false;
     input.focus();
   }
 }
 
-/**
- * FIX: render đúng cấu trúc .msg > .msg-avatar + .msg-bubble
- * Trước đây dùng el.textContent = text nên mất hết markdown và CSS không áp dụng.
- * Nay dùng innerHTML với markdownToHtml() để hiển thị bullet list từ bot.
- */
+/** Tin của bot render markdown đơn giản; tin của người dùng được escape. */
 function appendMsg(text, cls) {
   const box = document.getElementById("chatMessages");
   const el  = document.createElement("div");
@@ -58,7 +60,6 @@ function appendMsg(text, cls) {
     ? '<i class="fa-solid fa-robot"></i>'
     : '<i class="fa-solid fa-user"></i>';
 
-  // FIX: bot message dùng innerHTML với markdown parser, user message escape HTML
   const bubbleContent = cls === "bot"
     ? markdownToHtml(text)
     : escapeHtml(text);
@@ -113,12 +114,6 @@ function markdownToHtml(text) {
   return result.join("").replace(/<p><\/p>/g, "");
 }
 
-function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 function appendTyping() {
   const box = document.getElementById("chatMessages");
   const el  = document.createElement("div");
@@ -137,18 +132,7 @@ function appendTyping() {
 
 function clearChat() {
   chatHistory.length = 0;
-  const box = document.getElementById("chatMessages");
-  box.innerHTML = `
-    <div class="msg bot">
-      <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
-      <div class="msg-bubble">
-        Xin chào! Tôi là AI School Assistant. Tôi có thể giúp bạn:<br /><br />
-        • Tra cứu thông tin và lịch sử vi phạm của học sinh<br />
-        • Xem thống kê vi phạm theo ngày, tuần, tháng<br />
-        • Tổng hợp báo cáo nhanh<br /><br />
-        Bạn cần hỗ trợ gì?
-      </div>
-    </div>`;
+  document.getElementById("chatMessages").innerHTML = GREETING_HTML;
 }
 
 function quickAsk(text) {
@@ -156,14 +140,37 @@ function quickAsk(text) {
   sendMessage();
 }
 
-function searchStudent() {
-  const q = document.getElementById("studentSearch").value.trim();
+/** Tra cứu học sinh theo mã/tên: lấy thẳng từ DB (không qua AI) nên luôn đúng học sinh và đúng lỗi. */
+async function searchStudent() {
+  const input = document.getElementById("studentSearch");
+  const q = input.value.trim();
   if (!q) return;
-  quickAsk(`Tìm học sinh: ${q}`);
+
+  appendMsg(`Tra cứu học sinh: ${q}`, "user");
+  const typingEl = appendTyping();
+  try {
+    const res = await apiFetch(`/chatbot/lookup?q=${encodeURIComponent(q)}`);
+    typingEl.remove();
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      appendMsg("❌ Lỗi: " + (err.detail || "Server lỗi"), "bot");
+      return;
+    }
+    const data = await res.json();
+    appendMsg(data.reply, "bot");
+    // đưa kết quả vào lịch sử để hỏi tiếp ("em này vi phạm gần nhất khi nào?") AI vẫn có ngữ cảnh
+    chatHistory.push({ role: "user", content: `Tra cứu học sinh: ${q}` });
+    chatHistory.push({ role: "assistant", content: data.reply });
+    input.value = "";
+  } catch {
+    typingEl.remove();
+    appendMsg("❌ Không kết nối được server", "bot");
+  }
 }
 
 // Load context badge
 (async function loadContextBadge() {
+  if (!isTeacher()) return;
   try {
     const res = await apiFetch("/stats/summary");
     if (!res.ok) return;
@@ -172,8 +179,7 @@ function searchStudent() {
     if (badge) {
       badge.textContent = `${data.total_students} học sinh · ${data.total_violations} vi phạm`;
     }
-  } catch (e) {
-    const badge = document.getElementById("contextBadge");
-    if (badge) badge.textContent = "Đã kết nối";
+  } catch {
+    /* không có số liệu thì thôi, không ảnh hưởng chat */
   }
 })();

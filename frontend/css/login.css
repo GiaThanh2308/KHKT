@@ -57,30 +57,8 @@ body {
       linear-gradient(140deg, rgba(26,46,74,0.75) 0%, rgba(26,111,168,0.6) 100%),
       url('../img/ten-anh.jpg') center / cover no-repeat;
   ─────────────────────────────────────────────────────────────────── */
-.login-panel-left__bg {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(140deg, #1a2e4a 0%, #0f4c75 55%, #1a6fa8 100%);
-}
 
 /* Vòng trang trí */
-.login-panel-left__deco {
-  position: absolute;
-  border-radius: 50%;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-}
-.login-panel-left__deco.deco1 {
-  width: 340px;
-  height: 340px;
-  top: -70px;
-  right: -90px;
-}
-.login-panel-left__deco.deco2 {
-  width: 220px;
-  height: 220px;
-  bottom: 20px;
-  left: -60px;
-}
 
 .login-panel-left__content {
   position: relative;

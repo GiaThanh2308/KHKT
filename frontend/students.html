@@ -5,7 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Quản lý học sinh — AI School</title>
     <link rel="stylesheet" href="css/style.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <link rel="stylesheet" href="css/students.css" />
+    <link rel="stylesheet" href="css/theme.css" />
+    <link rel="stylesheet" href="css/nav.css" />
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
     <style>
       .filter-bar {
@@ -61,16 +64,11 @@
             <p>Danh sách và thông tin học sinh</p>
           </div>
           <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <div class="user-box">
-              <i class="fa-solid fa-user-circle"></i>
-              <span id="usernameDisplay">---</span>
-              <span id="roleBadge" class="role-badge"></span>
-            </div>
             <button class="add-btn" onclick="openModal()">
               <i class="fa-solid fa-plus"></i> Thêm học sinh
             </button>
             <button class="btn-success" onclick="importFromFolders()" id="importBtn">
-              <i class="fa-solid fa-folder-open"></i> Import từ thư mục
+              <i class="fa-solid fa-rotate"></i> Đồng bộ lại
             </button>
           </div>
         </header>
@@ -136,6 +134,7 @@
             <tbody id="studentTable"></tbody>
           </table>
         </section>
+        <div class="pager" id="pager"></div>
       </main>
     </div>
 
@@ -152,8 +151,8 @@
         </div>
         <input type="hidden" id="editingId" />
         <div class="form-group">
-          <label><span style="color: red;">*</span> Mã học sinh</label>
-          <input type="text" id="studentCode" placeholder="Ví dụ: HS001" />
+          <label>Mã học sinh</label>
+          <input type="text" id="studentCode" placeholder="Để trống để tự tạo (VD: HS120122)" />
         </div>
         <div class="form-group">
           <label><span style="color: red;">*</span> Họ tên</label>
@@ -177,37 +176,5 @@
 
     <script src="js/api.js"></script>
     <script src="js/students.js"></script>
-    <script>
-      requireAuth();
-      requireTeacher();
-      renderNav("students");
-
-      async function importFromFolders() {
-        const btn = document.getElementById("importBtn");
-        if (!confirm("Hệ thống sẽ quét thư mục known_faces và tạo hồ sơ cho toàn bộ học sinh. Tiếp tục?")) return;
-
-        btn.disabled = true;
-        btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang import...';
-
-        try {
-          const res = await apiFetch("/import-from-folders", { method: "POST" });
-          const data = await res.json();
-
-          if (!res.ok) {
-            alert("Lỗi: " + (data.detail || "Không xác định"));
-            return;
-          }
-
-          alert(data.message +
-            (data.errors.length ? "\n\nLỗi:\n" + data.errors.join("\n") : ""));
-          loadStudents();
-        } catch (e) {
-          alert("Không kết nối được server");
-        } finally {
-          btn.disabled = false;
-          btn.innerHTML = '<i class="fa-solid fa-folder-open"></i> Import từ thư mục';
-        }
-      }
-    </script>
   </body>
 </html>

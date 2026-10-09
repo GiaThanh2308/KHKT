@@ -1,14 +1,14 @@
-from pydantic import BaseModel
 from typing import Optional
+
+from pydantic import BaseModel
 
 
 class StudentCreate(BaseModel):
-    student_code: str
+    student_code: Optional[str] = None  # để trống → tự cấp HS<khối><lớp><STT>
     full_name: str
     class_name: str
     face_label: Optional[str] = None
     phone: str = ""
-    parent_phone: str = ""
 
 
 class StudentUpdate(BaseModel):
@@ -17,14 +17,12 @@ class StudentUpdate(BaseModel):
     class_name: Optional[str] = None
     face_label: Optional[str] = None
     phone: Optional[str] = None
-    parent_phone: Optional[str] = None
 
 
 class ViolationCreate(BaseModel):
     student_id: int
     violation_type: str
     note: str = ""
-    image_path: str = ""
 
 
 class ChatMessage(BaseModel):
@@ -36,7 +34,7 @@ class ChatRequest(BaseModel):
     messages: list[ChatMessage]
 
 
-
-
-
-
+class CreateUserRequest(BaseModel):
+    username: str
+    password: str
+    role: str = "teacher"

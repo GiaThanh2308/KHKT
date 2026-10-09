@@ -149,7 +149,7 @@ body { background: #f4f7fb; color: #111827; }
 
 .user-box {
   display: flex; align-items: center; gap: 10px;
-  background: white;
+  background: var(--surface);
   padding: 10px 16px;
   border-radius: 50px;
   box-shadow: var(--shadow);
@@ -168,7 +168,7 @@ body { background: #f4f7fb; color: #111827; }
   margin-bottom: 24px;
 }
 .stat-card {
-  background: white;
+  background: var(--surface);
   padding: 20px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
@@ -182,7 +182,7 @@ body { background: #f4f7fb; color: #111827; }
 .stat-card h2  { font-size: 32px; font-weight: 800; letter-spacing: -1px; }
 .stat-card.green { border-top: 3px solid var(--success); }
 .stat-card.blue  { border-top: 3px solid var(--primary); }
-.stat-card.amber { border-top: 3px solid var(--warning); }
+
 .stat-card.red   { border-top: 3px solid var(--danger);  }
 
 /* compat with old class names */
@@ -194,7 +194,7 @@ body { background: #f4f7fb; color: #111827; }
    CONTENT CARDS
 ====================== */
 .card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   padding: 20px;
   box-shadow: var(--shadow);
@@ -221,8 +221,6 @@ button:hover { background: var(--primary-dark); transform: translateY(-1px); }
 button:active { transform: translateY(0); }
 button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
 
-.btn-danger  { background: var(--danger); }
-.btn-danger:hover  { background: #b91c1c; }
 .btn-success { background: var(--success); }
 .btn-success:hover { background: #15803d; }
 .btn-ghost   { background: var(--gray-100); color: var(--gray-800); }
@@ -233,7 +231,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
    TABLE
 ====================== */
 .table-card {
-  background: white;
+  background: var(--surface);
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   overflow-x: auto;
@@ -257,10 +255,10 @@ tbody tr:last-child { border-bottom: none; }
 }
 .badge-blue  { background: #eff6ff; color: var(--primary); }
 .badge-red   { background: #fef2f2; color: var(--danger);  }
-.badge-green { background: #f0fdf4; color: var(--success); }
+
 .badge-amber { background: #fffbeb; color: var(--warning); }
 /* compat */
-.badge.warning { background: #fffbeb; color: var(--warning); }
+
 .badge.danger  { background: #fef2f2; color: var(--danger); }
 
 /* ======================
@@ -275,7 +273,7 @@ input, select, textarea {
   border: 1.5px solid var(--gray-200);
   font-size: 14px; font-family: inherit;
   outline: none; transition: border-color 0.2s;
-  background: white;
+  background: var(--surface);
 }
 input:focus, select:focus, textarea:focus { border-color: var(--primary); }
 textarea { min-height: 90px; resize: none; }
@@ -296,7 +294,7 @@ body.modal-open {
 }
 .modal-content {
   width: 460px; max-width: 95%;
-  background: white; border-radius: 20px;
+  background: var(--surface); border-radius: 20px;
   padding: 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.2);
   animation: slideUp 0.25s ease;
   max-height: 90vh; overflow-y: auto;
@@ -322,19 +320,19 @@ body.modal-open {
 /* ======================
    SEARCH BAR
 ====================== */
-.search-bar, .search-section {
-  background: white;
+ .search-section {
+  background: var(--surface);
   padding: 12px 18px;
   border-radius: var(--radius);
   box-shadow: var(--shadow);
   display: flex; align-items: center; gap: 10px;
   margin-bottom: 20px;
 }
-.search-bar input, .search-box input {
+ .search-box input {
   border: none; outline: none; width: 100%; font-size: 15px;
   padding: 0; background: transparent;
 }
-.search-bar i, .search-box i { color: var(--gray-400); }
+ .search-box i { color: var(--gray-400); }
 .search-box { border: none; box-shadow: none; padding: 0; background: transparent; }
 
 /* ======================
@@ -354,52 +352,10 @@ body.modal-open {
 /* ======================
    PROFILE CARD (face.js)
 ====================== */
-.empty-profile {
-  flex: 1; min-height: 200px;
-  display: flex; flex-direction: column;
-  justify-content: center; align-items: center;
-  text-align: center; color: var(--gray-400); gap: 12px;
-}
-.empty-profile i  { font-size: 64px; }
-.empty-profile p  { font-size: 18px; font-weight: 600; }
-.empty-profile small { font-size: 13px; }
-
-.profile-card { display: flex; flex-direction: column; gap: 12px; }
-.profile-avatar {
-  width: 255px; height: 255px; border-radius: 50%;
-  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-  color: white; display: flex; justify-content: center; align-items: center;
-  font-size: 52px; margin: 0 auto;
-  overflow: hidden;
-  flex-shrink: 0;
-}
-.profile-avatar.has-photo {
-  background: var(--gray-100);
-}
-.profile-avatar.has-photo i {
-  display: none;
-}
-.profile-avatar img {
-  width: 100%;
-  height: 100%;
-  display: block;
-  object-fit: cover;
-}
-.profile-card h2 { text-align: center; font-size: 22px; }
-
-.violation-section { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
-.violation-section label { font-weight: 600; font-size: 14px; }
-.violation-section select,
-.violation-section textarea { font-size: 14px; }
-.violation-section button { justify-content: center; }
 
 /* ======================
    LOADING PLACEHOLDER
 ====================== */
-.loading-placeholder {
-  text-align: center; padding: 24px;
-  color: var(--gray-400); font-size: 14px;
-}
 
 /* ======================
    ROLE BADGE (topbar)
@@ -420,7 +376,7 @@ body.modal-open {
 ====================== */
 @media (max-width: 1024px) {
   .stats { grid-template-columns: repeat(2, 1fr); }
-  .content-row { grid-template-columns: 1fr !important; }
+  
 }
 
 /* ======================
@@ -458,7 +414,7 @@ body.modal-open {
     position: fixed;
     bottom: 0; left: 0; right: 0;
     height: 68px;
-    background: white;
+    background: var(--surface);
     justify-content: space-around;
     align-items: center;
     box-shadow: 0 -2px 16px rgba(0,0,0,0.08);
@@ -487,9 +443,3 @@ body.modal-open {
   .user-box { padding: 8px 12px; font-size: 13px; }
   .card { padding: 14px; }
 }
-
-
-
-
-
-

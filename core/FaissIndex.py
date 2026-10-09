@@ -1,37 +1,37 @@
-import numpy as np
+"""FaissIndex — tìm khuôn mặt giống nhất bằng cosine similarity (FAISS, chạy CPU)."""
 import faiss
+import numpy as np
+
+MATCH_THRESHOLD = 0.5  # ngưỡng cosine; dưới ngưỡng này coi là "unknown"
 
 
 class FaissIndex:
-    def __init__(self, dim=512):
-        self.dim   = dim
+    def __init__(self, dim: int = 512):
+        self.dim = dim
         self.index = None
-        self.names = []
+        self.names: list[str] = []
 
     def build_index(self, embeddings, names):
-        """Tạo FAISS index chạy trên CPU."""
-        if not embeddings:
-            print("⚠️ Không có embeddings để tạo FAISS index.")
+        """Dựng index từ danh sách vector (mỗi vector ứng với một tên trong `names`)."""
+        if len(embeddings) == 0 or len(embeddings) != len(names):
+            print("⚠️ Không có embeddings hợp lệ để tạo FAISS index.")
             return
-        xb = np.vstack(embeddings).astype('float32')
+        xb = np.vstack(embeddings).astype("float32")
         faiss.normalize_L2(xb)
-        self.index = faiss.IndexFlatIP(self.dim)  # inner product = cosine similarity (sau normalize)
-        self.index.add(xb)
-        self.names = names
-        print(f"✅ FAISS CPU index đã tạo ({len(names)} khuôn mặt)")
+        index = faiss.IndexFlatIP(self.dim)  # inner product = cosine sau khi chuẩn hóa
+        index.add(xb)
+        # gán một lần ở cuối để request đang tìm kiếm không thấy index dở dang
+        self.names, self.index = list(names), index
+        print(f"✅ FAISS index đã tạo ({len(names)} vector)")
 
-    def search(self, query_embedding, threshold=0.5):
-        """Tìm người giống nhất (CPU)."""
+    def search(self, query_embedding, threshold: float = MATCH_THRESHOLD):
+        """Trả về (tên, độ giống). Dưới ngưỡng → ("unknown", độ giống)."""
         if self.index is None:
             return "unknown", 0.0
-        q = np.array(query_embedding, dtype='float32').reshape(1, -1)
+        q = np.asarray(query_embedding, dtype="float32").reshape(1, -1)
         faiss.normalize_L2(q)
-        D, I = self.index.search(q, 1)  # tìm top-1
-        sim = float(D[0][0])
+        scores, ids = self.index.search(q, 1)
+        sim = float(scores[0][0])
         if sim >= threshold:
-            return self.names[int(I[0][0])], sim
+            return self.names[int(ids[0][0])], sim
         return "unknown", sim
-
-
-
-

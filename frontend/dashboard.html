@@ -7,6 +7,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
+  <link rel="stylesheet" href="css/nav.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
@@ -41,130 +42,6 @@
       overflow-x: hidden;
     }
 
-    /* ── SIDEBAR ── */
-    .sidebar {
-      width: var(--sidebar-w);
-      background: var(--surface);
-      border-right: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      position: fixed;
-      top: 0; left: 0; bottom: 0;
-      z-index: 100;
-      transition: transform 0.3s ease;
-    }
-
-    .sidebar-logo {
-      padding: 24px 20px 20px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .logo-badge {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .logo-icon {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, var(--primary), #a78bfa);
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 16px;
-    }
-
-    .logo-text { font-size: 15px; font-weight: 700; letter-spacing: -0.3px; }
-    .logo-sub  { font-size: 10px; color: var(--text-muted); margin-top: 1px; }
-
-    .sidebar-nav {
-      flex: 1;
-      padding: 16px 12px;
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-
-    .nav-label {
-      font-size: 9px;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.2px;
-      color: var(--text-muted);
-      padding: 12px 8px 6px;
-    }
-
-    .nav-item {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px 12px;
-      border-radius: 10px;
-      font-size: 13.5px;
-      font-weight: 500;
-      color: var(--text-muted);
-      cursor: pointer;
-      text-decoration: none;
-      transition: all 0.18s;
-      position: relative;
-    }
-
-    .nav-item:hover { background: var(--surface2); color: var(--text); }
-
-    .nav-item.active {
-      background: var(--primary-light);
-      color: var(--primary);
-    }
-
-    .nav-item.active::before {
-      content: '';
-      position: absolute;
-      left: 0; top: 25%; bottom: 25%;
-      width: 3px;
-      background: var(--primary);
-      border-radius: 0 3px 3px 0;
-    }
-
-    .nav-item i { width: 18px; text-align: center; font-size: 14px; }
-
-    .nav-badge {
-      margin-left: auto;
-      background: var(--red);
-      color: #fff;
-      font-size: 10px;
-      font-weight: 700;
-      padding: 1px 6px;
-      border-radius: 20px;
-    }
-
-    .sidebar-footer {
-      padding: 16px 12px;
-      border-top: 1px solid var(--border);
-    }
-
-    .user-card {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 10px;
-      border-radius: 10px;
-      cursor: pointer;
-      transition: background 0.18s;
-    }
-
-    .user-card:hover { background: var(--surface2); }
-
-    .user-avatar {
-      width: 32px; height: 32px;
-      background: linear-gradient(135deg, var(--primary), #a78bfa);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 12px; font-weight: 700;
-    }
-
-    .user-name  { font-size: 13px; font-weight: 600; }
-    .user-role  { font-size: 10px; color: var(--text-muted); }
-    .user-card i { margin-left: auto; color: var(--text-muted); font-size: 11px; }
-
     /* ── MAIN ── */
     .main {
       margin-left: var(--sidebar-w);
@@ -192,12 +69,7 @@
     .topbar-title { font-size: 16px; font-weight: 600; }
     .topbar-sub   { font-size: 12px; color: var(--text-muted); margin-top: 1px; }
 
-    .topbar-actions {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
+    
 
     .btn {
       display: inline-flex;
@@ -213,11 +85,8 @@
       text-decoration: none;
     }
 
-    .btn-primary {
-      background: linear-gradient(135deg, var(--primary), #a78bfa);
-      color: #fff;
-    }
-    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
+    
+    
 
     .btn-ghost {
       background: transparent;
@@ -226,28 +95,10 @@
     }
     .btn-ghost:hover { background: var(--surface2); color: var(--text); }
 
-    .icon-btn {
-      width: 36px; height: 36px;
-      border-radius: 9px;
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      color: var(--text-muted);
-      display: flex; align-items: center; justify-content: center;
-      cursor: pointer;
-      font-size: 14px;
-      transition: all 0.18s;
-      position: relative;
-    }
-    .icon-btn:hover { color: var(--text); background: var(--surface); }
+    
+    
 
-    .notif-dot {
-      width: 7px; height: 7px;
-      background: var(--red);
-      border-radius: 50%;
-      position: absolute;
-      top: 6px; right: 6px;
-      border: 1.5px solid var(--surface);
-    }
+    
 
     /* ── CONTENT ── */
     .content {
@@ -295,18 +146,10 @@
       font-size: 18px;
     }
 
-    .stat-trend {
-      font-size: 11px;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 20px;
-      display: flex;
-      align-items: center;
-      gap: 3px;
-    }
-    .trend-up   { background: var(--red-light);   color: var(--red); }
-    .trend-down { background: var(--green-light);  color: var(--green); }
-    .trend-flat { background: var(--blue-light);   color: var(--blue); }
+    
+    
+    
+    
 
     .stat-value {
       font-size: 32px;
@@ -484,48 +327,18 @@
     .feed-time { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
 
     /* ── QUICK ACTIONS ── */
-    .quick-actions {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 4px;
-    }
+    
 
-    .qa-btn {
-      background: var(--surface2);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      padding: 12px 10px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      transition: all 0.18s;
-      text-align: center;
-    }
+    
 
-    .qa-btn:hover {
-      border-color: var(--primary);
-      background: var(--primary-light);
-    }
+    
 
-    .qa-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 15px;
-    }
+    
 
-    .qa-label { font-size: 11px; font-weight: 500; color: var(--text-muted); }
+    
 
     /* ── SKELETON ── */
-    .skeleton {
-      background: linear-gradient(90deg, var(--surface2) 25%, var(--surface) 50%, var(--surface2) 75%);
-      background-size: 200% 100%;
-      animation: shimmer 1.5s infinite;
-      border-radius: 6px;
-    }
+    
 
     @keyframes shimmer {
       0%   { background-position: 200% 0; }
@@ -545,64 +358,17 @@
     }
 
     @media (max-width: 768px) {
-      .sidebar { transform: translateX(-100%); }
-      .sidebar.open { transform: translateX(0); }
-      .main { margin-left: 0; }
+            .main { margin-left: 0; }
       .stats-grid { grid-template-columns: 1fr 1fr; }
       .content { padding: 16px; }
+      .main { padding-bottom: 80px; }
     }
   </style>
 </head>
 <body>
 
-<!-- ── SIDEBAR ── -->
-<aside class="sidebar" id="sidebar">
-  <div class="sidebar-logo">
-    <div class="logo-badge">
-      <div class="logo-icon">🎓</div>
-      <div>
-        <div class="logo-text">AI School</div>
-        <div class="logo-sub">Quản lý học sinh</div>
-      </div>
-    </div>
-  </div>
-
-  <nav class="sidebar-nav">
-    <div class="nav-label">Chính</div>
-    <a href="dashboard.html" class="nav-item active">
-      <i class="fa-solid fa-chart-pie"></i> Dashboard
-    </a>
-    <a href="index.html" class="nav-item">
-      <i class="fa-solid fa-camera"></i> Nhận diện
-      <span class="nav-badge">Live</span>
-    </a>
-    <a href="students.html" class="nav-item">
-      <i class="fa-solid fa-users"></i> Học sinh
-    </a>
-    <a href="chatbot.html" class="nav-item">
-      <i class="fa-solid fa-robot"></i> Chatbot AI
-    </a>
-
-    <div class="nav-label">Báo cáo</div>
-    <a href="#" class="nav-item">
-      <i class="fa-solid fa-triangle-exclamation"></i> Vi phạm
-    </a>
-    <a href="#" class="nav-item">
-      <i class="fa-solid fa-file-export"></i> Xuất báo cáo
-    </a>
-  </nav>
-
-  <div class="sidebar-footer">
-    <div class="user-card">
-      <div class="user-avatar">A</div>
-      <div>
-        <div class="user-name">admin</div>
-        <div class="user-role">Quản trị viên</div>
-      </div>
-      <i class="fa-solid fa-ellipsis-vertical"></i>
-    </div>
-  </div>
-</aside>
+<!-- ── SIDEBAR (do renderNav() tạo, dùng chung mọi trang) ── -->
+<aside class="sidebar" id="sidebar"></aside>
 
 <!-- ── MAIN ── -->
 <main class="main">
@@ -610,7 +376,7 @@
   <header class="topbar">
     <div>
       <div class="topbar-title">Dashboard</div>
-      <div class="topbar-sub">Thứ 5, 26 tháng 6 năm 2025</div>
+      <div class="topbar-sub">—</div></div>
   </header>
 
   <!-- CONTENT -->
@@ -622,13 +388,10 @@
           <div class="stat-icon" style="background:var(--primary-light); color:var(--primary)">
             <i class="fa-solid fa-users"></i>
           </div>
-          <div class="stat-trend trend-flat">
-            <i class="fa-solid fa-minus"></i> 0%
-          </div>
         </div>
         <div>
-          <div class="stat-value" id="total-students">—</div>
-          <div class="stat-label">Tổng học sinh vi phạm </div>
+          <div class="stat-value" id="total_violations">—</div>
+          <div class="stat-label">Tổng lượt vi phạm</div>
         </div>
       </div>
 
@@ -637,12 +400,9 @@
           <div class="stat-icon" style="background:var(--red-light); color:var(--red)">
             <i class="fa-solid fa-calendar-day"></i>
           </div>
-          <div class="stat-trend trend-up" id="trend-today">
-            <i class="fa-solid fa-arrow-up"></i> <span id="trend-today-val">+2</span>
-          </div>
         </div>
         <div>
-          <div class="stat-value" id="viol-today">—</div>
+          <div class="stat-value" id="viol_today">—</div>
           <div class="stat-label">Vi phạm hôm nay</div>
         </div>
       </div>
@@ -652,12 +412,9 @@
           <div class="stat-icon" style="background:var(--orange-light); color:var(--orange)">
             <i class="fa-solid fa-calendar-week"></i>
           </div>
-          <div class="stat-trend trend-up">
-            <i class="fa-solid fa-arrow-up"></i> +12%
-          </div>
         </div>
         <div>
-          <div class="stat-value" id="viol-week">—</div>
+          <div class="stat-value" id="viol_week">—</div>
           <div class="stat-label">Vi phạm tuần này</div>
         </div>
       </div>
@@ -667,12 +424,9 @@
           <div class="stat-icon" style="background:var(--blue-light); color:var(--blue)">
             <i class="fa-solid fa-calendar"></i>
           </div>
-          <div class="stat-trend trend-down">
-            <i class="fa-solid fa-arrow-down"></i> -5%
-          </div>
         </div>
         <div>
-          <div class="stat-value" id="viol-month">—</div>
+          <div class="stat-value" id="viol_month">—</div>
           <div class="stat-label">Vi phạm tháng này</div>
         </div>
       </div>
@@ -688,7 +442,6 @@
             <div class="card-sub">Theo dõi xu hướng vi phạm hàng ngày</div>
           </div>
           <div style="display:flex;gap:8px">
-            <button class="btn btn-ghost" style="padding:5px 12px;font-size:12px">Xuất</button>
           </div>
         </div>
         <div class="chart-wrap">
@@ -749,209 +502,69 @@
   </div><!-- /content -->
 </main>
 
+<nav class="mobile-nav" id="mobileNav"></nav>
+
+<script src="js/api.js"></script>
 <script>
-  /* ── MOCK DATA (thay bằng API call thực) ── */
-  const MOCK = {
-    totalStudents: 312,
-    violToday: 4,
-    violWeek: 27,
-    violMonth: 89,
-
-    chartLabels: ['T2', 'T3', 'T4', 'T5', 'T6', 'T7', 'CN'],
-    chartData:   [3, 7, 5, 9, 4, 2, 6],
-
-    vtypes: [
-      { name: 'Đi học muộn',    count: 38, color: '#6c63ff' },
-      { name: 'Không đồng phục',count: 24, color: '#f97316' },
-      { name: 'Sử dụng điện thoại', count: 17, color: '#f43f5e' },
-      { name: 'Bỏ tiết',        count: 10, color: '#38bdf8' },
-    ],
-
-    topViolators: [
-      { name: 'Nguyễn Văn A', code: 'HS042', cls: '10A1', count: 9,  color: '#6c63ff' },
-      { name: 'Trần Thị B',   code: 'HS107', cls: '11B3', count: 7,  color: '#f97316' },
-      { name: 'Lê Minh C',    code: 'HS081', cls: '10A2', count: 6,  color: '#22d3a5' },
-      { name: 'Phạm Thu D',   code: 'HS155', cls: '12C1', count: 5,  color: '#f43f5e' },
-      { name: 'Hoàng Văn E',  code: 'HS203', cls: '11A4', count: 4,  color: '#38bdf8' },
-    ],
-
-    feed: [
-      { name: 'Nguyễn Văn A', type: 'Đi học muộn',       time: '2 phút trước',  color: '#f43f5e' },
-      { name: 'Trần Thị B',   type: 'Không đồng phục',   time: '15 phút trước', color: '#f97316' },
-      { name: 'Lê Minh C',    type: 'Sử dụng điện thoại',time: '34 phút trước', color: '#6c63ff' },
-      { name: 'Phạm Thu D',   type: 'Bỏ tiết',           time: '1 giờ trước',   color: '#38bdf8' },
-      { name: 'Hoàng Văn E',  type: 'Đi học muộn',       time: '2 giờ trước',   color: '#f43f5e' },
-    ],
+  requireAuth(); requireTeacher(); renderNav('dashboard');
+  const COLORS = ['#6c63ff','#f97316','#f43f5e','#38bdf8','#22d3a5'];
+  const esc = s => s == null ? '' : String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const ini = n => (n||'?').trim().split(/\s+/).slice(-2).map(w => w[0]).join('').toUpperCase();
+  const tip = { backgroundColor:'#22263a', borderColor:'rgba(255,255,255,0.1)', borderWidth:1, titleColor:'#e8eaf0', bodyColor:'#7c82a0', padding:10 };
+  const get = async p => { const r = await apiFetch(p); if (!r.ok) throw new Error(p); return r.json(); };
+  const ago = iso => {
+    const d = new Date(iso && !/Z|\+/.test(iso) ? iso + 'Z' : iso), m = Math.max(0, Math.round((Date.now() - d) / 60000));
+    return m < 1 ? 'Vừa xong' : m < 60 ? m + ' phút trước' : m < 1440 ? Math.round(m/60) + ' giờ trước' : Math.round(m/1440) + ' ngày trước';
   };
+  const empty = t => `<div style="text-align:center;color:var(--text-muted);padding:20px;font-size:13px">${t}</div>`;
 
-  /* ── LOAD STATS ── */
-  function loadStats() {
-    // In real app: fetch from API, then populate
-    document.getElementById('total-students').textContent = MOCK.totalStudents;
-    document.getElementById('viol-today').textContent    = MOCK.violToday;
-    document.getElementById('viol-week').textContent     = MOCK.violWeek;
-    document.getElementById('viol-month').textContent    = MOCK.violMonth;
+  async function loadStats() {
+    const d = await get('/stats/summary');
+    total_violations.textContent = d.total_violations; viol_today.textContent = d.today_violations;
+    viol_week.textContent = d.week_violations; viol_month.textContent = d.month_violations;
   }
-
-  /* ── LINE CHART ── */
-  function buildLineChart() {
-    const ctx = document.getElementById('lineChart').getContext('2d');
-    const gradient = ctx.createLinearGradient(0, 0, 0, 220);
-    gradient.addColorStop(0,   'rgba(108,99,255,0.35)');
-    gradient.addColorStop(1,   'rgba(108,99,255,0)');
-
-    new Chart(ctx, {
-      type: 'line',
-      data: {
-        labels: MOCK.chartLabels,
-        datasets: [{
-          label: 'Vi phạm',
-          data: MOCK.chartData,
-          borderColor: '#6c63ff',
-          borderWidth: 2.5,
-          pointBackgroundColor: '#6c63ff',
-          pointRadius: 4,
-          pointHoverRadius: 6,
-          fill: true,
-          backgroundColor: gradient,
-          tension: 0.42,
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false }, tooltip: {
-          backgroundColor: '#22263a',
-          borderColor: 'rgba(255,255,255,0.1)',
-          borderWidth: 1,
-          titleColor: '#e8eaf0',
-          bodyColor: '#7c82a0',
-          padding: 10,
-          callbacks: {
-            label: ctx => ` ${ctx.raw} vi phạm`,
-          }
-        }},
-        scales: {
-          x: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7c82a0', font: { size: 12 } } },
-          y: { grid: { color: 'rgba(255,255,255,0.05)' }, ticks: { color: '#7c82a0', font: { size: 12 }, stepSize: 2 }, beginAtZero: true }
-        }
-      }
-    });
+  async function buildLineChart() {
+    const d = await get('/stats/daily?days=7');
+    const ctx = lineChart.getContext('2d'), g = ctx.createLinearGradient(0,0,0,220);
+    g.addColorStop(0,'rgba(108,99,255,0.35)'); g.addColorStop(1,'rgba(108,99,255,0)');
+    new Chart(ctx, { type:'line', data:{ labels:d.map(x=>x.date), datasets:[{ label:'Vi phạm', data:d.map(x=>x.count),
+      borderColor:'#6c63ff', borderWidth:2.5, pointBackgroundColor:'#6c63ff', pointRadius:4, pointHoverRadius:6, fill:true, backgroundColor:g, tension:.42 }]},
+      options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{display:false}, tooltip:{...tip, callbacks:{label:c=>` ${c.raw} vi phạm`}} },
+        scales:{ x:{grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#7c82a0'}}, y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.05)'},ticks:{color:'#7c82a0',precision:0}} } } });
   }
-
-  /* ── DONUT CHART ── */
-  function buildDonutChart() {
-    const ctx = document.getElementById('donutChart').getContext('2d');
-    const total = MOCK.vtypes.reduce((s, v) => s + v.count, 0);
-
-    new Chart(ctx, {
-      type: 'doughnut',
-      data: {
-        labels: MOCK.vtypes.map(v => v.name),
-        datasets: [{
-          data: MOCK.vtypes.map(v => v.count),
-          backgroundColor: MOCK.vtypes.map(v => v.color),
-          borderWidth: 0,
-          hoverOffset: 6,
-        }]
-      },
-      options: {
-        cutout: '72%',
-        plugins: {
-          legend: { display: false },
-          tooltip: {
-            backgroundColor: '#22263a',
-            borderColor: 'rgba(255,255,255,0.1)',
-            borderWidth: 1,
-            titleColor: '#e8eaf0',
-            bodyColor: '#7c82a0',
-          }
-        }
-      }
-    });
-
-    // legend list
-    const list = document.getElementById('vtype-list');
-    MOCK.vtypes.forEach(v => {
-      const pct = Math.round(v.count / total * 100);
-      list.innerHTML += `
-        <div class="vtype-item">
-          <div class="vtype-dot" style="background:${v.color}"></div>
-          <div class="vtype-name">${v.name}</div>
-          <div class="vtype-bar-track">
-            <div class="vtype-bar-fill" style="width:${pct}%;background:${v.color}"></div>
-          </div>
-          <div class="vtype-count">${v.count}</div>
-        </div>`;
-    });
+  async function buildDonutChart() {
+    const d = (await get('/stats/by-type')).sort((a,b)=>b.count-a.count), list = document.getElementById('vtype-list');
+    const total = d.reduce((s,v)=>s+v.count,0);
+    if (!total) { list.innerHTML = empty('Chưa có dữ liệu'); return; }
+    new Chart(donutChart.getContext('2d'), { type:'doughnut', data:{ labels:d.map(v=>v.type),
+      datasets:[{ data:d.map(v=>v.count), backgroundColor:d.map((_,i)=>COLORS[i%5]), borderWidth:0, hoverOffset:6 }]},
+      options:{ cutout:'72%', plugins:{ legend:{display:false}, tooltip:tip } } });
+    list.innerHTML = d.map((v,i)=>`<div class="vtype-item"><div class="vtype-dot" style="background:${COLORS[i%5]}"></div>
+      <div class="vtype-name">${esc(v.type)}</div><div class="vtype-bar-track"><div class="vtype-bar-fill" style="width:${Math.round(v.count/total*100)}%;background:${COLORS[i%5]}"></div></div>
+      <div class="vtype-count">${v.count}</div></div>`).join('');
   }
-
-  /* ── TOP VIOLATORS ── */
-  function buildTopViolators() {
-    const tbody = document.getElementById('top-violators');
-    MOCK.topViolators.forEach((s, i) => {
-      const rankClass = i === 0 ? 'rank-1' : i === 1 ? 'rank-2' : i === 2 ? 'rank-3' : 'rank-other';
-      const initials = s.name.split(' ').slice(-2).map(w => w[0]).join('');
-      tbody.innerHTML += `
-        <tr>
-          <td style="width:28px">
-            <div class="rank-num ${rankClass}">${i+1}</div>
-          </td>
-          <td>
-            <div style="display:flex;align-items:center">
-              <div class="stu-avatar" style="background:${s.color}22;color:${s.color}">${initials}</div>
-              <div>
-                <div class="stu-name">${s.name}</div>
-                <div class="stu-meta">${s.code} · ${s.cls}</div>
-              </div>
-            </div>
-          </td>
-          <td style="text-align:right">
-            <span class="violation-badge">${s.count} lần</span>
-          </td>
-        </tr>`;
-    });
+  async function buildTopViolators() {
+    const d = await get('/stats/top-violators?limit=5'), tb = document.getElementById('top-violators');
+    if (!d.length) { tb.innerHTML = `<tr><td>${empty('Chưa có dữ liệu')}</td></tr>`; return; }
+    tb.innerHTML = d.map((s,i)=>{ const c = COLORS[i%5], r = i<3 ? 'rank-'+(i+1) : 'rank-other';
+      return `<tr><td style="width:28px"><div class="rank-num ${r}">${i+1}</div></td><td><div style="display:flex;align-items:center">
+        <div class="stu-avatar" style="background:${c}22;color:${c}">${esc(ini(s.full_name))}</div>
+        <div><div class="stu-name">${esc(s.full_name)}</div><div class="stu-meta">${esc(s.student_code)} · ${esc(s.class_name)}</div></div></div></td>
+        <td style="text-align:right"><span class="violation-badge">${s.count} lần</span></td></tr>`; }).join('');
   }
-
-  /* ── ACTIVITY FEED ── */
-  function buildFeed() {
-    const feed = document.getElementById('activity-feed');
-    MOCK.feed.forEach((item, i) => {
-      const isLast = i === MOCK.feed.length - 1;
-      const initials = item.name.split(' ').slice(-2).map(w => w[0]).join('');
-      feed.innerHTML += `
-        <div class="feed-item">
-          <div class="feed-dot-wrap">
-            <div class="feed-dot" style="background:${item.color}"></div>
-            ${!isLast ? '<div class="feed-line"></div>' : ''}
-          </div>
-          <div class="feed-body">
-            <div style="display:flex;align-items:center;gap:8px">
-              <div class="stu-avatar" style="width:28px;height:28px;font-size:11px;background:${item.color}22;color:${item.color};border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700">${initials}</div>
-              <div>
-                <div class="feed-name">${item.name}</div>
-                <div class="feed-type">${item.type}</div>
-              </div>
-            </div>
-            <div class="feed-time">${item.time}</div>
-          </div>
-        </div>`;
-    });
+  async function buildFeed() {
+    const d = await get('/violations?limit=6'), f = document.getElementById('activity-feed');
+    if (!d.length) { f.innerHTML = empty('Chưa có hoạt động'); return; }
+    f.innerHTML = d.map((v,i)=>{ const c = COLORS[i%5];
+      return `<div class="feed-item"><div class="feed-dot-wrap"><div class="feed-dot" style="background:${c}"></div>${i<d.length-1?'<div class="feed-line"></div>':''}</div>
+        <div class="feed-body"><div style="display:flex;align-items:center;gap:8px"><div class="stu-avatar" style="width:28px;height:28px;font-size:11px;margin:0;background:${c}22;color:${c}">${esc(ini(v.student_name))}</div>
+        <div><div class="feed-name">${esc(v.student_name)}</div><div class="feed-type">${esc(v.violation_type)}</div></div></div><div class="feed-time">${ago(v.created_at)}</div></div></div>`; }).join('');
   }
-
-  /* ── INIT ── */
   window.addEventListener('DOMContentLoaded', () => {
-    loadStats();
-    buildLineChart();
-    buildDonutChart();
-    buildTopViolators();
-    buildFeed();
-
-    // Update topbar date
-    const d = new Date();
-    const days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
-    document.querySelector('.topbar-sub').textContent =
-      `${days[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth()+1} năm ${d.getFullYear()}`;
+    if (!isTeacher()) return;
+    [loadStats, buildLineChart, buildDonutChart, buildTopViolators, buildFeed].forEach(fn => fn().catch(e => console.warn(e)));
+    const d = new Date(), days = ['Chủ nhật','Thứ hai','Thứ ba','Thứ tư','Thứ năm','Thứ sáu','Thứ bảy'];
+    document.querySelector('.topbar-sub').textContent = `${days[d.getDay()]}, ${d.getDate()} tháng ${d.getMonth()+1} năm ${d.getFullYear()}`;
   });
 </script>
 </body>

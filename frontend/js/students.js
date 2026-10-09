@@ -1,9 +1,7 @@
 // students.js — Chỉ dành cho teacher/admin
 requireAuth();
 requireTeacher();
-
-document.getElementById("usernameDisplay").textContent =
-  localStorage.getItem("username") || "---";
+renderNav("students");
 
 let allStudents = [];
 
@@ -22,79 +20,86 @@ async function loadStudents() {
 
     // Cập nhật bộ lọc lớp
     buildClassFilter(classes);
-    filterStudents();
-  } catch {
-    showError("Không kết nối được server");
+    filterStudents(true);
+  } catch (e) {
+    console.error("loadStudents:", e);
+    showError(e instanceof TypeError && /fetch|network/i.test(e.message)
+      ? "Không kết nối được server"
+      : "Lỗi hiển thị danh sách: " + e.message);
   }
 }
 
+// "10A2" -> "10"; sắp xếp tự nhiên để 10A2 đứng trước 10A10
+const khoiOf = (cls) => (String(cls || "").match(/^\d+/) || [""])[0];
+const natCmp = (a, b) => String(a).localeCompare(String(b), "vi", { numeric: true, sensitivity: "base" });
+
+let classesByKhoi = {}; // { "10": ["10A1","10A2",...], ... }
+let activeKhoi = "";
+
 function buildClassFilter(classes) {
-  const khoisSet = new Set();
-  const classMap = {}; // khoi → [lop]
-
-  [...classes].sort().forEach(cls => {
-    const khoi = cls.replace(/[^0-9]/g, "").slice(0, 2); // "10A1" → "10"
-    if (!classMap[khoi]) classMap[khoi] = [];
-    classMap[khoi].push(cls);
-    khoisSet.add(khoi);
+  const keepLop = document.getElementById("lopFilter")?.value || "";
+  classesByKhoi = {};
+  [...classes].forEach(cls => {
+    const k = khoiOf(cls);
+    (classesByKhoi[k] = classesByKhoi[k] || []).push(cls);
   });
+  Object.values(classesByKhoi).forEach(list => list.sort(natCmp));
 
-  // Render filter bar
+  // Nếu khối đang chọn không còn tồn tại thì quay về "Tất cả"
+  if (activeKhoi && !classesByKhoi[activeKhoi]) activeKhoi = "";
+
   const bar = document.getElementById("classFilterBar");
-  if (!bar) return;
-
-  let html = `<button class="filter-btn active" onclick="setKhoiFilter('', this)">Tất cả</button>`;
-  [...khoisSet].sort().forEach(khoi => {
-    html += `<button class="filter-btn" onclick="setKhoiFilter('${khoi}', this)">Khối ${khoi}</button>`;
-  });
-  bar.innerHTML = html;
-
-  // Render lớp dropdown
-  const lopSel = document.getElementById("lopFilter");
-  if (!lopSel) return;
-  lopSel.innerHTML = `<option value="">Tất cả lớp</option>`;
-  Object.keys(classMap).sort().forEach(khoi => {
-    const group = document.createElement("optgroup");
-    group.label = `Khối ${khoi}`;
-    classMap[khoi].sort().forEach(cls => {
-      const opt = document.createElement("option");
-      opt.value = cls;
-      opt.textContent = cls;
-      group.appendChild(opt);
-    });
-    lopSel.appendChild(group);
-  });
+  if (bar) {
+    const khois = Object.keys(classesByKhoi).sort(natCmp);
+    bar.innerHTML =
+      `<button class="filter-btn ${activeKhoi === "" ? "active" : ""}" onclick="setKhoiFilter('', this)">Tất cả</button>` +
+      khois.map(k => `<button class="filter-btn ${activeKhoi === k ? "active" : ""}" onclick="setKhoiFilter('${k}', this)">Khối ${k}</button>`).join("");
+  }
+  populateLopSelect(keepLop);
 }
 
-let activeKhoi = "";
+// Dropdown lớp chỉ hiện các lớp thuộc khối đang chọn (đã sắp xếp)
+function populateLopSelect(keep = "") {
+  const sel = document.getElementById("lopFilter");
+  if (!sel) return;
+  sel.innerHTML = `<option value="">${activeKhoi ? `Tất cả lớp khối ${activeKhoi}` : "Tất cả lớp"}</option>`;
+
+  const khois = activeKhoi ? [activeKhoi] : Object.keys(classesByKhoi).sort(natCmp);
+  khois.forEach(k => {
+    const addOpt = (parent, cls) => {
+      const o = document.createElement("option");
+      o.value = cls; o.textContent = cls;
+      parent.appendChild(o);
+    };
+    if (activeKhoi) {
+      (classesByKhoi[k] || []).forEach(cls => addOpt(sel, cls));
+    } else {
+      const g = document.createElement("optgroup");
+      g.label = `Khối ${k}`;
+      (classesByKhoi[k] || []).forEach(cls => addOpt(g, cls));
+      sel.appendChild(g);
+    }
+  });
+  sel.value = keep && [...sel.options].some(o => o.value === keep) ? keep : "";
+}
 
 function setKhoiFilter(khoi, btn) {
   activeKhoi = khoi;
   document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
   btn.classList.add("active");
-  // Reset lớp filter
-  const lopSel = document.getElementById("lopFilter");
-  if (lopSel) lopSel.value = "";
+  populateLopSelect(); // đổi khối → làm mới danh sách lớp, bỏ lớp cũ
   filterStudents();
 }
 
-function filterStudents() {
+function filterStudents(keepPage = false) {
   const q      = (document.getElementById("searchInput")?.value || "").toLowerCase();
   const lopVal = document.getElementById("lopFilter")?.value || "";
 
   let filtered = allStudents;
 
-  // Lọc khối
-  if (activeKhoi) {
-    filtered = filtered.filter(s => (s.class_name || "").startsWith(activeKhoi));
-  }
+  if (activeKhoi) filtered = filtered.filter(s => khoiOf(s.class_name) === activeKhoi);
+  if (lopVal)     filtered = filtered.filter(s => s.class_name === lopVal);
 
-  // Lọc lớp cụ thể
-  if (lopVal) {
-    filtered = filtered.filter(s => s.class_name === lopVal);
-  }
-
-  // Tìm kiếm text
   if (q) {
     filtered = filtered.filter(s =>
       (s.full_name    || "").toLowerCase().includes(q) ||
@@ -103,7 +108,7 @@ function filterStudents() {
     );
   }
 
-  renderTable(filtered);
+  renderTable(filtered, keepPage === true);
 }
 
 function showError(msg) {
@@ -112,24 +117,37 @@ function showError(msg) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--danger);padding:32px">${escapeHtml(msg)}</td></tr>`;
 }
 
-function escapeHtml(str) {
-  if (str == null) return "";
-  return String(str)
-    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
-    .replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
-}
 
-function renderTable(students) {
+const PAGE_SIZE = 50;
+let viewList = [], page = 1;
+
+const initials = (n) => (n || "?").trim().split(/\s+/).slice(-2).map(w => w[0]).join("").toUpperCase();
+
+function renderTable(students, keepPage = false) {
+  viewList = students;
+  if (!keepPage) page = 1;
+  const pages = Math.max(1, Math.ceil(viewList.length / PAGE_SIZE));
+  page = Math.min(page, pages);
+
   const tbody = document.getElementById("studentTable");
-  if (!students.length) {
+  if (!viewList.length) {
     tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:var(--gray-400);padding:32px">Chưa có học sinh nào</td></tr>`;
+    renderPager(0, 1);
     return;
   }
-  tbody.innerHTML = students.map((s, i) => `
+  const start = (page - 1) * PAGE_SIZE;
+  tbody.innerHTML = viewList.slice(start, start + PAGE_SIZE).map((s, i) => {
+    const img = apiAssetUrl(s.face_image_url, { withToken: true });
+    return `
     <tr>
-      <td style="color:var(--gray-400)">${i + 1}</td>
+      <td style="color:var(--gray-400)">${start + i + 1}</td>
       <td><span class="badge badge-blue">${escapeHtml(s.student_code)}</span></td>
-      <td><strong>${escapeHtml(s.full_name)}</strong></td>
+      <td>
+        <div class="stu-cell">
+          <span class="stu-thumb">${escapeHtml(initials(s.full_name))}${img ? `<img loading="lazy" decoding="async" src="${escapeHtml(img)}" alt="" onerror="this.remove()">` : ""}</span>
+          <strong>${escapeHtml(s.full_name)}</strong>
+        </div>
+      </td>
       <td>${escapeHtml(s.class_name)}</td>
       <td style="font-size:13px">${escapeHtml(s.phone) || "—"}</td>
       <td>
@@ -138,8 +156,33 @@ function renderTable(students) {
           <button class="btn-sm delete-btn" onclick="deleteStudent(${s.id})"><i class="fa-solid fa-trash"></i></button>
         </div>
       </td>
-    </tr>
-  `).join("");
+    </tr>`;
+  }).join("");
+  renderPager(viewList.length, pages);
+}
+
+function renderPager(total, pages) {
+  const el = document.getElementById("pager");
+  if (!el) return;
+  if (total <= PAGE_SIZE) { el.innerHTML = total ? `<span class="pager-info">${total} học sinh</span>` : ""; return; }
+  el.innerHTML = `
+    <span class="pager-info">${(page - 1) * PAGE_SIZE + 1}–${Math.min(page * PAGE_SIZE, total)} / ${total} học sinh</span>
+    <div class="pager-btns">
+      <button class="btn-sm" onclick="goPage(${page - 1})" ${page <= 1 ? "disabled" : ""}><i class="fa-solid fa-chevron-left"></i></button>
+      <span class="pager-cur">${page} / ${pages}</span>
+      <button class="btn-sm" onclick="goPage(${page + 1})" ${page >= pages ? "disabled" : ""}><i class="fa-solid fa-chevron-right"></i></button>
+    </div>`;
+}
+
+function goPage(n) {
+  page = n;
+  renderTable(viewList, true);
+  document.querySelector(".table-card")?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
+
+function showModal() {
+  document.getElementById("studentModal").classList.add("open");
+  document.body.classList.add("modal-open"); // bản cũ chỉ khoá cuộn khi THÊM, không khoá khi SỬA
 }
 
 function openModal() {
@@ -148,8 +191,7 @@ function openModal() {
   ["studentCode","fullName","className","faceLabel","phone"].forEach(id => {
     document.getElementById(id).value = "";
   });
-  document.getElementById("studentModal").classList.add("open");
-  document.body.classList.add("modal-open");
+  showModal();
 }
 
 function openEdit(id) {
@@ -162,7 +204,7 @@ function openEdit(id) {
   document.getElementById("className").value          = s.class_name;
   document.getElementById("faceLabel").value          = s.face_label || "";
   document.getElementById("phone").value              = s.phone || "";
-  document.getElementById("studentModal").classList.add("open");
+  showModal();
 }
 
 function closeModal() {
@@ -180,7 +222,7 @@ async function saveStudent() {
     phone:        document.getElementById("phone").value.trim(),
   };
 
-  if (!body.student_code || !body.full_name || !body.class_name) {
+  if (!body.full_name || !body.class_name) {
     alert("Vui lòng điền đầy đủ thông tin bắt buộc (*)"); return;
   }
 
@@ -198,8 +240,6 @@ async function saveStudent() {
   } catch { alert("Lỗi kết nối server"); }
 }
 
-const createStudent = saveStudent;
-
 async function deleteStudent(id) {
   const s    = allStudents.find(x => x.id === id);
   const name = s ? s.full_name : `ID ${id}`;
@@ -211,4 +251,23 @@ async function deleteStudent(id) {
   } catch { alert("Lỗi kết nối server"); }
 }
 
-loadStudents();
+if (isTeacher()) loadStudents(); // student đang bị chuyển trang, không gọi API nữa
+
+/** Nút "Đồng bộ lại": học khuôn mặt người mới trong known_faces + tạo hồ sơ còn thiếu. */
+async function importFromFolders() {
+  const btn = document.getElementById("importBtn");
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đồng bộ...';
+  try {
+    const res  = await apiFetch("/import-from-folders", { method: "POST" });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) { alert("Lỗi: " + (data.detail || "Không xác định")); return; }
+    alert(data.message + (data.errors?.length ? "\n\nLỗi:\n" + data.errors.join("\n") : ""));
+    loadStudents();
+  } catch {
+    alert("Không kết nối được server");
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fa-solid fa-rotate"></i> Đồng bộ lại';
+  }
+}
