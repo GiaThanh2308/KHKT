@@ -13,12 +13,13 @@ async function login() {
   const btn = document.getElementById("loginBtn");
 
   if (!username || !password) {
-    msg.textContent = "Vui lòng nhập đầy đủ thông tin";
+    msg.textContent = "Nhập tên đăng nhập và mật khẩu.";
+    (username ? document.getElementById("password") : document.getElementById("username")).focus();
     return;
   }
 
   btn.disabled = true;
-  btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang đăng nhập...';
+  btn.innerHTML = icon("loader", "spin") + " Đang đăng nhập…";
   msg.textContent = "";
 
   try {
@@ -29,7 +30,7 @@ async function login() {
     });
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      msg.textContent = err.detail || "Sai tài khoản hoặc mật khẩu";
+      msg.textContent = err.detail || "Sai tên đăng nhập hoặc mật khẩu.";
       return;
     }
     const data = await res.json();
@@ -38,9 +39,9 @@ async function login() {
     localStorage.setItem("role", data.role);
     redirectByRole(data.role);
   } catch {
-    msg.textContent = "Không kết nối được server";
+    msg.textContent = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
   } finally {
     btn.disabled = false;
-    btn.innerHTML = '<i class="fa-solid fa-right-to-bracket"></i> Đăng nhập';
+    btn.textContent = "Đăng nhập";
   }
 }

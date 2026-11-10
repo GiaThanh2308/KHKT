@@ -5,12 +5,15 @@ requireTeacher();
 renderNav("chatbot");
 
 const chatHistory = []; // lịch sử hội thoại gửi lên backend
+const MAX_CHAT_CHARS = 500;    // độ dài tối đa một câu hỏi (server còn giới hạn lại)
+const MAX_SENT_MESSAGES = 10;  // chỉ gửi 10 tin gần nhất
+const MAX_SENT_CHARS = 1500;   // cắt từng tin trước khi gửi, tránh vượt giới hạn của server
 const GREETING_HTML = document.getElementById("chatMessages").innerHTML; // lời chào có sẵn trong HTML, dùng lại khi xoá hội thoại
 
 async function sendMessage() {
   const input   = document.getElementById("chatInput");
   const sendBtn = document.getElementById("sendBtn");
-  const text    = input.value.trim();
+  const text    = input.value.trim().slice(0, MAX_CHAT_CHARS);
   if (!text) return;
 
   appendMsg(text, "user");
@@ -23,14 +26,15 @@ async function sendMessage() {
   try {
     const res = await apiFetch("/chatbot", {
       method: "POST",
-      body:   JSON.stringify({ messages: chatHistory }),
+      body:   JSON.stringify({ messages: chatHistory.slice(-MAX_SENT_MESSAGES)
+        .map(m => ({ role: m.role, content: String(m.content).slice(0, MAX_SENT_CHARS) })) }),
     });
 
     typingEl.remove();
 
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      appendMsg("❌ Lỗi: " + (err.detail || "Server lỗi"), "bot");
+      appendMsg("Không gửi được câu hỏi: " + (err.detail || "máy chủ gặp lỗi") + ".", "bot");
       chatHistory.pop(); // bỏ câu hỏi chưa được trả lời để lượt sau không bị 2 tin "user" liên tiếp
       return;
     }
@@ -42,7 +46,7 @@ async function sendMessage() {
 
   } catch (e) {
     typingEl.remove();
-    appendMsg("❌ Không kết nối được server", "bot");
+    appendMsg("Không kết nối được máy chủ. Kiểm tra mạng rồi hỏi lại.", "bot");
     chatHistory.pop();
   } finally {
     sendBtn.disabled = false;
@@ -57,8 +61,8 @@ function appendMsg(text, cls) {
   el.className = "msg " + cls;
 
   const avatarIcon = cls === "bot"
-    ? '<i class="fa-solid fa-robot"></i>'
-    : '<i class="fa-solid fa-user"></i>';
+    ? icon("bot")
+    : icon("user");
 
   const bubbleContent = cls === "bot"
     ? markdownToHtml(text)
@@ -119,7 +123,7 @@ function appendTyping() {
   const el  = document.createElement("div");
   el.className = "msg bot";
   el.innerHTML = `
-    <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
+    <div class="msg-avatar">${icon('bot')}</div>
     <div class="msg-bubble">
       <div class="typing">
         <span></span><span></span><span></span>
@@ -153,7 +157,7 @@ async function searchStudent() {
     typingEl.remove();
     if (!res.ok) {
       const err = await res.json().catch(() => ({}));
-      appendMsg("❌ Lỗi: " + (err.detail || "Server lỗi"), "bot");
+      appendMsg("Không gửi được câu hỏi: " + (err.detail || "máy chủ gặp lỗi") + ".", "bot");
       return;
     }
     const data = await res.json();
@@ -164,7 +168,7 @@ async function searchStudent() {
     input.value = "";
   } catch {
     typingEl.remove();
-    appendMsg("❌ Không kết nối được server", "bot");
+    appendMsg("Không kết nối được máy chủ. Kiểm tra mạng rồi hỏi lại.", "bot");
   }
 }
 

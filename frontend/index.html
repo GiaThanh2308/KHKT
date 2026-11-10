@@ -3,71 +3,71 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
   <title>Nhận diện — AI School</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/theme.css" />
-    <link rel="stylesheet" href="css/nav.css" />
-  <link rel="stylesheet" href="css/recognition.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
 </head>
 <body class="page-rec">
-<div class="layout">
-  <aside class="sidebar" id="sidebar"></aside>
-  <main class="main">
-    <header class="topbar">
-      <div><h1>Nhận diện khuôn mặt</h1><p>Hệ thống AI quản lý học sinh</p></div>
-    </header>
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+<main class="page page-rec" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Nhận diện</h1><p>Chụp khuôn mặt để ghi lỗi nề nếp.</p></div>
+  </div>
 
-    <section class="rec-grid">
-      <div class="cam-stage" id="stage" data-state="idle">
-        <video id="video" autoplay playsinline muted></video>
-        <img id="freezeImg" alt="" />
+  <div class="rec">
+    <div class="cam" id="stage" data-state="idle">
+      <video id="video" autoplay playsinline muted></video>
+      <img class="freeze" id="freezeImg" alt="Khung hình vừa chụp" />
 
-        <div class="cam-idle">
-          <i class="fa-solid fa-camera"></i>
-          <p>Camera đang tắt</p>
-          <small>Bật camera hoặc chọn ảnh có sẵn</small>
-          <div class="idle-actions">
-            <button class="btn-start" onclick="startCamera()"><i class="fa-solid fa-video"></i> Bật camera</button>
-            <label class="btn-alt"><i class="fa-solid fa-image"></i> Chọn ảnh
-              <input type="file" id="imageInput" accept="image/*" hidden onchange="uploadImage()" /></label>
-          </div>
+      <div class="cam-idle">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg>
+        <b>Camera đang tắt</b>
+        <small>Bật camera hoặc chọn một ảnh có sẵn.</small>
+        <div class="acts">
+          <button type="button" class="btn btn-primary" onclick="startCamera()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-video"/></svg> Bật camera</button>
+          <label class="btn" for="imageInput" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-image"/></svg> Chọn ảnh</label>
         </div>
+      </div>
+      <input type="file" id="imageInput" accept="image/*" class="sr-only" onchange="uploadImage()" />
 
-        <div class="cam-hud">
-          <div class="cam-frame">
-            <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
-            <div class="sweep"></div>
-            <div class="cam-badge" id="camBadge"><i class="fa-solid fa-check"></i></div>
-          </div>
-        </div>
-
-        <div class="cam-status"><span class="dot"></span><span id="statusText">Đưa khuôn mặt vào khung</span></div>
-        <button class="ctl cam-power" onclick="stopCamera()" title="Tắt camera"><i class="fa-solid fa-power-off"></i></button>
-
-        <div class="cam-controls">
-          <label class="ctl" title="Chọn ảnh"><i class="fa-solid fa-image"></i></label>
-          <button class="shutter" id="shutter" onclick="captureAndRecognize()" aria-label="Chụp và nhận diện"><span></span></button>
-          <button class="ctl" onclick="flipCamera()" title="Đổi camera"><i class="fa-solid fa-camera-rotate"></i></button>
+      <div class="cam-hud" aria-hidden="true">
+        <div class="cam-frame">
+          <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+          <div class="sweep"></div>
+          <div class="cam-badge" id="camBadge"></div>
         </div>
       </div>
 
-      <div class="result-card">
-        <h2>Kết quả nhận diện</h2>
-        <div id="studentProfile">
-          <div class="res-empty"><i class="fa-solid fa-user"></i><p>Chưa nhận diện học sinh</p><small>Thông tin sẽ hiện ở đây</small></div>
-        </div>
+      <div class="cam-status" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="statusText">Đưa khuôn mặt vào khung</span></div>
+      <button type="button" class="ctl cam-power" onclick="stopCamera()" aria-label="Tắt camera" title="Tắt camera"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-power"/></svg></button>
+
+      <div class="cam-controls">
+        <label class="ctl" for="imageInput" title="Chọn ảnh" aria-label="Chọn ảnh có sẵn" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-image"/></svg></label>
+        <button type="button" class="shutter" id="shutter" onclick="captureAndRecognize()" aria-label="Chụp và nhận diện"><span></span></button>
+        <button type="button" class="ctl" onclick="flipCamera()" aria-label="Đổi camera trước/sau" title="Đổi camera"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-flip"/></svg></button>
+      </div>
+    </div>
+
+    <section class="slip" aria-labelledby="slipTitle">
+      <h2 class="slip-title" id="slipTitle">Phiếu ghi lỗi</h2>
+      <div class="slip-body" id="studentProfile" aria-live="polite">
+        <div class="res-empty"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-user"/></svg><p>Chưa có học sinh nào</p><small>Chụp một khuôn mặt, kết quả sẽ hiện ở đây.</small></div>
       </div>
     </section>
+  </div>
 
-    <section class="card recent-card">
-      <h2>Vi phạm gần đây</h2>
-      <div id="recentViolations"><div class="res-empty"><small>Đang tải...</small></div></div>
-    </section>
-  </main>
-</div>
-<nav class="mobile-nav" id="mobileNav"></nav>
+  <section class="card recent recent-card" aria-labelledby="recentTitle">
+    <div class="card-head"><h2 id="recentTitle">Vi phạm gần đây</h2></div>
+    <div id="recentViolations"><div class="empty"><small>Đang tải…</small></div></div>
+  </section>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
 <canvas id="canvas" hidden></canvas>
 
 <script src="js/api.js"></script>

@@ -1,113 +1,55 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Đăng nhập — AI School</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link rel="stylesheet" href="css/login.css" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-  </head>
-  <body>
-    <div class="login-page">
-      <!-- Bên trái: ảnh / branding (ẩn trên điện thoại) -->
-      <div class="login-panel-left">
-        <div class="slider">
-          <div class="slide active">
-            <img src="images/truong.jfif" alt="" />
-          </div>
-          <div class="slide">
-            <img src="KHKT/frontend/images/sukien.jpg" alt="" />
-          </div>
-        </div>
-
-        <div class="login-panel-left__overlay"></div>
-
-        <div class="login-panel-left__content">
-          <div class="login-panel-left__icon">
-            <i class="fa-solid fa-school"></i>
-          </div>
-          <h2>AI School</h2>
-          <p>Hệ thống AI quản lý học sinh thông minh</p>
-          <div class="login-panel-left__dots" id="dots"></div>
-        </div>
-      </div>
-
-      <!-- Bên phải: form đăng nhập -->
-      <div class="login-panel-right">
-        <div class="login-logo-mini">
-          <i class="fa-solid fa-school"></i>
-          <span>AI School</span>
-        </div>
-
-        <div class="login-card">
-          <h1>Chào mừng trở lại</h1>
-          <p class="login-subtitle">Đăng nhập để tiếp tục</p>
-
-          <div class="input-group">
-            <label for="username">Username</label>
-            <div class="input-icon-wrap">
-              <i class="fa-solid fa-user input-icon"></i>
-              <input
-                type="text"
-                id="username"
-                placeholder="Nhập username"
-                onkeydown="if (event.key === 'Enter') login();"
-              />
-            </div>
-          </div>
-
-          <div class="input-group">
-            <label for="password">Mật khẩu</label>
-            <div class="input-icon-wrap">
-              <i class="fa-solid fa-lock input-icon"></i>
-              <input
-                type="password"
-                id="password"
-                placeholder="Nhập mật khẩu"
-                onkeydown="if (event.key === 'Enter') login();"
-              />
-            </div>
-          </div>
-
-          <button id="loginBtn" onclick="login()">
-            <i class="fa-solid fa-right-to-bracket"></i> Đăng nhập
-          </button>
-
-          <p id="loginMessage"></p>
-        </div>
-
-        <p class="login-footer">AI School</p>
-      </div>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Đăng nhập — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<main class="login">
+  <section class="login-art" aria-hidden="true">
+    <img src="images/truong.jpg" alt="" onerror="this.remove()" />
+    <div class="login-art-text">
+      <div class="brand"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#fff"/><path d="M10 7v18" stroke="#bf1230" stroke-width="2" stroke-linecap="round"/><path d="M15 11h9M15 16h9M15 21h6" stroke="#1b3aa8" stroke-width="2" stroke-linecap="round"/></svg><span>AI School</span></div>
+      <p>Ghi nhận nề nếp ngay tại cổng trường, bằng một lần chụp.</p>
     </div>
+  </section>
 
-    <script src="js/api.js"></script>
-    <script src="js/login.js"></script>
-    <script>
-      // Slider ảnh bên trái: ảnh nào không tải được thì bỏ khỏi vòng lặp
-      document.querySelectorAll(".slide img").forEach((img) => {
-        img.addEventListener("error", () => img.closest(".slide").remove());
-      });
-      window.addEventListener("load", () => {
-        const slides = [...document.querySelectorAll(".slide")];
-        const dotsBox = document.getElementById("dots");
-        dotsBox.innerHTML = slides.map((_, i) => `<span class="dot${i ? "" : " dot--active"}"></span>`).join("");
-        if (!slides.length) return;
-        slides[0].classList.add("active");
-        if (slides.length < 2) return;
-        const dots = [...dotsBox.children];
-        let current = 0;
-        setInterval(() => {
-          slides[current].classList.remove("active");
-          dots[current].classList.remove("dot--active");
-          current = (current + 1) % slides.length;
-          slides[current].classList.add("active");
-          dots[current].classList.add("dot--active");
-        }, 5000);
-      });
-    </script>
-  </body>
+  <section class="login-form login-ruled">
+    <form class="login-card" id="loginForm" novalidate onsubmit="event.preventDefault(); login();">
+      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--primary)"/><path d="M10 7v18" stroke="#ff8a9d" stroke-width="2" stroke-linecap="round"/><path d="M15 11h9M15 16h9M15 21h6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><span>AI School</span></div>
+      <h1>Đăng nhập</h1>
+      <p class="lead">Dùng tài khoản do nhà trường cấp.</p>
+
+      <div class="field">
+        <label for="username">Tên đăng nhập</label>
+        <div class="with-icon">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
+          <input class="input" type="text" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="with-icon">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="#i-lock"/></svg>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required />
+          <button type="button" class="btn-icon pw-toggle" aria-label="Hiện mật khẩu" aria-pressed="false"
+            onclick="const p=document.getElementById('password'),h=p.type==='password';p.type=h?'text':'password';this.setAttribute('aria-pressed',h);this.setAttribute('aria-label',h?'Ẩn mật khẩu':'Hiện mật khẩu');this.querySelector('use').setAttribute('href',h?'#i-eye-off':'#i-eye')"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button>
+        </div>
+      </div>
+      <p id="loginMessage" class="error-msg" role="alert"></p>
+      <button type="submit" id="loginBtn" class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+  </section>
+</main>
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+</body>
 </html>

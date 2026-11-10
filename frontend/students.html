@@ -1,180 +1,135 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quản lý học sinh — AI School</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="css/students.css" />
-    <link rel="stylesheet" href="css/theme.css" />
-    <link rel="stylesheet" href="css/nav.css" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <style>
-      .filter-bar {
-        display: flex;
-        gap: 8px;
-        flex-wrap: wrap;
-        margin-bottom: 12px;
-      }
-      .filter-btn {
-        background: var(--gray-100);
-        color: var(--gray-800);
-        border: none;
-        padding: 7px 16px;
-        border-radius: 20px;
-        font-size: 13px;
-        font-weight: 600;
-        cursor: pointer;
-        transition: all 0.15s;
-        width: auto;
-      }
-      .filter-btn:hover { background: var(--gray-200); transform: none; }
-      .filter-btn.active { background: var(--primary); color: white; }
-      .search-row {
-        display: flex;
-        gap: 10px;
-        align-items: center;
-        flex-wrap: wrap;
-      }
-      .search-row .search-box { flex: 1; min-width: 200px; }
-      #lopFilter {
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        border: 1.5px solid var(--gray-200);
-        font-size: 14px;
-        font-family: inherit;
-        outline: none;
-        background: white;
-        min-width: 140px;
-      }
-      #lopFilter:focus { border-color: var(--primary); }
-    </style>
-  </head>
-
-  <body>
-    <div class="layout">
-
-      <aside class="sidebar" id="sidebar"></aside>
-
-      <main class="main">
-        <header class="topbar">
-          <div>
-            <h1>Quản lý học sinh</h1>
-            <p>Danh sách và thông tin học sinh</p>
-          </div>
-          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
-            <button class="add-btn" onclick="openModal()">
-              <i class="fa-solid fa-plus"></i> Thêm học sinh
-            </button>
-            <button class="btn-success" onclick="importFromFolders()" id="importBtn">
-              <i class="fa-solid fa-rotate"></i> Đồng bộ lại
-            </button>
-          </div>
-        </header>
-
-        <section class="stats">
-          <div class="stat-card student">
-            <div class="card-header">
-              <span>Tổng học sinh</span>
-              <i class="fa-solid fa-user-graduate"></i>
-            </div>
-            <h2 id="studentCount">0</h2>
-          </div>
-          <div class="stat-card face">
-            <div class="card-header">
-              <span>Đã có khuôn mặt</span>
-              <i class="fa-solid fa-face-smile"></i>
-            </div>
-            <h2 id="faceCount">0</h2>
-          </div>
-          <div class="stat-card plate">
-            <div class="card-header">
-              <span>Lớp học</span>
-              <i class="fa-solid fa-school"></i>
-            </div>
-            <h2 id="classCount">0</h2>
-          </div>
-        </section>
-
-        <section class="search-section" style="flex-direction:column;align-items:stretch;gap:10px;">
-          <!-- Bộ lọc khối -->
-          <div class="filter-bar" id="classFilterBar">
-            <button class="filter-btn active" onclick="setKhoiFilter('', this)">Tất cả</button>
-          </div>
-          <!-- Tìm kiếm + lọc lớp -->
-          <div class="search-row">
-            <div class="search-box">
-              <i class="fa-solid fa-magnifying-glass"></i>
-              <input
-                type="text"
-                placeholder="Tìm kiếm học sinh..."
-                id="searchInput"
-                oninput="filterStudents()"
-              />
-            </div>
-            <select id="lopFilter" onchange="filterStudents()">
-              <option value="">Tất cả lớp</option>
-            </select>
-          </div>
-        </section>
-
-        <section class="table-card">
-          <table>
-            <thead>
-              <tr>
-                <th>STT</th>
-                <th>Mã HS</th>
-                <th>Họ tên</th>
-                <th>Lớp</th>
-                <th>SĐT</th>
-                <th>Hành động</th>
-              </tr>
-            </thead>
-            <tbody id="studentTable"></tbody>
-          </table>
-        </section>
-        <div class="pager" id="pager"></div>
-      </main>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Học sinh — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+<main class="page" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Học sinh</h1><p>Danh sách và hồ sơ khuôn mặt.</p></div>
+    <div class="page-actions">
+      <button type="button" class="btn btn-primary" onclick="openModal()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-plus"/></svg> Thêm học sinh</button>
+      <button type="button" class="btn" id="importBtn" onclick="importFromFolders()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-flip"/></svg> Đồng bộ lại</button>
+      <button type="button" class="btn" onclick="openRoster()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-sheet"/></svg> Nhập từ Excel</button>
     </div>
+  </div>
 
-    <nav class="mobile-nav" id="mobileNav"></nav>
+  <dl class="strip three">
+    <div><dt>Tổng học sinh</dt><dd id="studentCount">0</dd></div>
+    <div><dt>Đã có khuôn mặt</dt><dd id="faceCount">0</dd></div>
+    <div><dt>Số lớp</dt><dd id="classCount">0</dd></div>
+  </dl>
 
-    <!-- Modal thêm/sửa học sinh -->
-    <div class="modal" id="studentModal">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h2 id="modalTitle">Thêm học sinh</h2>
-          <button class="close-btn" onclick="closeModal()">
-            <i class="fa-solid fa-xmark"></i>
-          </button>
-        </div>
-        <input type="hidden" id="editingId" />
-        <div class="form-group">
-          <label>Mã học sinh</label>
-          <input type="text" id="studentCode" placeholder="Để trống để tự tạo (VD: HS120122)" />
-        </div>
-        <div class="form-group">
-          <label><span style="color: red;">*</span> Họ tên</label>
-          <input type="text" id="fullName" placeholder="Ví dụ: Nguyễn Văn A" />
-        </div>
-        <div class="form-group">
-          <label><span style="color: red;">*</span> Lớp</label>
-          <input type="text" id="className" placeholder="Ví dụ: 10A1" />
-        </div>
-        <div class="form-group">
-          <label>Face Label</label>
-          <input type="text" id="faceLabel" placeholder="Ví dụ: VanA_10A1" />
-        </div>
-        <div class="form-group">
-          <label>Số điện thoại</label>
-          <input type="text" id="phone" placeholder="Ví dụ: 0901234567" />
-        </div>
-        <button class="save-btn" onclick="saveStudent()">Lưu học sinh</button>
+  <section class="card" style="margin-bottom:16px" aria-label="Bộ lọc">
+    <div class="seg" id="classFilterBar" role="group" aria-label="Lọc theo khối">
+      <button type="button" aria-pressed="true" onclick="setKhoiFilter('', this)">Tất cả</button>
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;margin-top:14px">
+      <div class="with-icon" style="flex:1;min-width:220px">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg>
+        <label class="sr-only" for="searchInput">Tìm học sinh theo tên, mã hoặc lớp</label>
+        <input class="input" type="search" id="searchInput" placeholder="Tìm theo tên, mã hoặc lớp" oninput="filterStudents()" autocomplete="off" />
+      </div>
+      <div>
+        <label class="sr-only" for="lopFilter">Lọc theo lớp</label>
+        <select class="select input" id="lopFilter" onchange="filterStudents()" style="min-width:160px">
+          <option value="">Tất cả lớp</option>
+        </select>
       </div>
     </div>
+  </section>
 
-    <script src="js/api.js"></script>
-    <script src="js/students.js"></script>
-  </body>
+  <div class="table-wrap">
+    <table class="tbl">
+      <caption class="sr-only">Danh sách học sinh</caption>
+      <thead>
+        <tr>
+          <th scope="col">STT</th><th scope="col">Mã HS</th><th scope="col">Họ tên</th><th scope="col">Lớp</th><th scope="col">SĐT</th>
+          <th scope="col" class="end">Thao tác</th>
+        </tr>
+      </thead>
+      <tbody id="studentTable"></tbody>
+    </table>
+  </div>
+  <div class="pager" id="pager"></div>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
+
+<!-- Thêm / sửa học sinh -->
+<div class="modal" id="studentModal">
+  <form class="modal-box" onsubmit="event.preventDefault(); saveStudent();" novalidate>
+    <div class="modal-head">
+      <h2 id="modalTitle">Thêm học sinh</h2>
+      <button type="button" class="btn-icon" onclick="closeModal()" aria-label="Đóng"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
+    </div>
+    <input type="hidden" id="editingId" />
+    <div class="field">
+      <label for="studentCode">Mã học sinh</label>
+      <input type="text" id="studentCode" placeholder="Để trống để tự tạo, ví dụ HS120122" />
+    </div>
+    <div class="field">
+      <label for="fullName">Họ tên<span class="req" aria-hidden="true">*</span></label>
+      <input type="text" id="fullName" required aria-required="true" placeholder="Ví dụ: Nguyễn Văn A" />
+    </div>
+    <div class="field">
+      <label for="className">Lớp<span class="req" aria-hidden="true">*</span></label>
+      <input type="text" id="className" required aria-required="true" placeholder="Ví dụ: 10A1" />
+    </div>
+    <div class="field">
+      <label for="faceLabel">Nhãn khuôn mặt</label>
+      <input type="text" id="faceLabel" aria-describedby="faceHint" placeholder="Ví dụ: Nguyen Van A_10A1" />
+      <span class="hint" id="faceHint">Trùng tên thư mục ảnh trong known_faces. Để trống nếu chưa có ảnh.</span>
+    </div>
+    <div class="field">
+      <label for="phone">Số điện thoại</label>
+      <input type="tel" id="phone" placeholder="Ví dụ: 0901234567" />
+    </div>
+    <div class="row-actions" style="justify-content:flex-end">
+      <button type="button" class="btn" onclick="closeModal()">Hủy</button>
+      <button type="submit" class="btn btn-primary">Lưu học sinh</button>
+    </div>
+  </form>
+</div>
+
+<!-- Nhập danh sách từ Excel -->
+<div class="modal" id="rosterModal">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h2>Nhập học sinh từ Excel</h2>
+      <button type="button" class="btn-icon" onclick="closeRoster()" aria-label="Đóng"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-x"/></svg></button>
+    </div>
+    <div class="info-box">
+      Mỗi dòng gồm <b>Họ và tên</b> và <b>Lớp</b> (hoặc <b>Họ đệm</b> + <b>Tên</b>; hoặc mỗi lớp một sheet, tên sheet là tên lớp).
+      <b>Không cần mã học sinh</b>: người chưa có trong hệ thống được <b>tự cấp mã</b>, ví dụ <code>HS100301</code>, xếp theo tên A→Z trong lớp.
+      Người đã có chỉ được sửa tên có dấu, mã HS và khuôn mặt giữ nguyên. Luôn có bước xem trước.
+      <button type="button" class="btn" style="min-height:36px;margin-top:8px;display:flex" onclick="downloadRosterTemplate()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-download"/></svg> Tải file mẫu</button>
+    </div>
+    <div class="field">
+      <label for="rosterFile">File Excel (.xlsx)</label>
+      <input type="file" id="rosterFile" accept=".xlsx" onchange="rosterReset()" />
+    </div>
+    <label class="check"><input type="checkbox" id="rosterCreate" checked onchange="rosterReset()" /> Tạo học sinh mới cho người chưa có trong hệ thống (tự cấp mã)</label>
+    <label class="check"><input type="checkbox" id="rosterMove" onchange="rosterReset()" /> Cho phép đổi lớp theo danh sách (khi học sinh không còn ở lớp cũ)</label>
+    <div class="row-actions">
+      <button type="button" class="btn btn-primary" id="rosterPreviewBtn" onclick="runRoster(false)">Xem trước</button>
+      <button type="button" class="btn btn-primary" id="rosterApplyBtn" onclick="runRoster(true)" style="display:none">Áp dụng</button>
+    </div>
+    <div id="rosterResult" aria-live="polite"></div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/students.js"></script>
+</body>
 </html>

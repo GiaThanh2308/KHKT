@@ -1,111 +1,85 @@
 <!doctype html>
 <html lang="vi">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chatbot AI — AI School</title>
-    <link rel="stylesheet" href="css/style.css" />
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
-    <link rel="stylesheet" href="css/theme.css" />
-    <link rel="stylesheet" href="css/nav.css" />
-    <link rel="stylesheet" href="css/chatbot.css" />
-  </head>
-  <body>
-    <div class="layout">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Chatbot AI — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+<main class="page" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Chatbot AI</h1><p>Hỏi về học sinh, vi phạm và thống kê.</p></div>
+  </div>
 
-      <!-- Sidebar (desktop) — nội dung được renderNav() inject -->
-      <aside class="sidebar" id="sidebar"></aside>
+  <div class="chat">
+    <section class="card chat-main" aria-label="Hội thoại">
+      <div class="chat-top">
+        <span class="msg-avatar"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bot"/></svg></span>
+        <div><b>Trợ lý AI School</b><small>Trả lời dựa trên dữ liệu của trường</small></div>
+        <span class="badge" id="contextBadge">Đang tải…</span>
+      </div>
 
-      <main class="main">
-        <header class="topbar">
-          <div>
-            <h1>Chatbot AI</h1>
-            <p>Hỏi về học sinh, vi phạm và thống kê</p>
-          </div>
-        </header>
-
-        <div class="chat-layout">
-          <!-- Main chat -->
-          <div class="chat-main">
-            <div class="chat-header">
-              <div class="bot-avatar"><i class="fa-solid fa-robot"></i></div>
-              <div class="chat-header-info">
-                <strong>AI School Assistant</strong>
-                <small>● Được hỗ trợ bởi Groq AI</small>
-              </div>
-              <span class="context-badge" id="contextBadge">Đang tải...</span>
-            </div>
-
-            <div class="chat-messages" id="chatMessages">
-              <div class="msg bot">
-                <div class="msg-avatar"><i class="fa-solid fa-robot"></i></div>
-                <div class="msg-bubble">
-                  Xin chào! Tôi là AI School Assistant. Tôi có thể giúp bạn:<br /><br />
-                  • Tra cứu thông tin và lịch sử vi phạm của học sinh<br />
-                  • Xem thống kê vi phạm theo ngày, tuần, tháng<br />
-                  • Tổng hợp báo cáo nhanh<br /><br />
-                  Bạn cần hỗ trợ gì?
-                </div>
-              </div>
-            </div>
-
-            <div class="chat-actions">
-              <button class="clear-btn" onclick="clearChat()">
-                <i class="fa-solid fa-trash-can"></i> Xóa hội thoại
-              </button>
-            </div>
-
-            <div class="chat-input">
-              <input
-                type="text"
-                id="chatInput"
-                placeholder="Nhập câu hỏi..."
-                onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage();}"
-              />
-              <button id="sendBtn" onclick="sendMessage()">
-                <i class="fa-solid fa-paper-plane"></i>
-              </button>
-            </div>
-          </div>
-
-          <!-- Sidebar chat -->
-          <div class="chat-sidebar">
-            <div class="shortcuts">
-              <h3>Câu hỏi nhanh</h3>
-              <button class="shortcut-btn" onclick="quickAsk('Tổng kết vi phạm hôm nay')">📊 Tổng kết hôm nay</button>
-              <button class="shortcut-btn" onclick="quickAsk('Học sinh nào vi phạm nhiều nhất tuần này?')">🏆 Vi phạm nhiều nhất</button>
-              <button class="shortcut-btn" onclick="quickAsk('Thống kê vi phạm theo loại')">📋 Vi phạm theo loại</button>
-              <button class="shortcut-btn" onclick="quickAsk('Có bao nhiêu học sinh trong hệ thống?')">👥 Tổng học sinh</button>
-              <button class="shortcut-btn" onclick="quickAsk('Danh sách vi phạm gần đây nhất')">🔔 Vi phạm gần đây</button>
-              <button class="shortcut-btn" onclick="quickAsk('Tóm tắt báo cáo tháng này')">📅 Báo cáo tháng</button>
-            </div>
-
-            <div class="shortcuts">
-              <h3>Tra cứu học sinh</h3>
-              <p style="font-size:13px;color:var(--gray-400);margin-bottom:10px;">Nhập tên hoặc mã học sinh</p>
-              <div style="display:flex;gap:8px">
-                <input
-                  id="studentSearch"
-                  type="text"
-                  placeholder="Tên / mã HS..."
-                  style="border-radius:8px;font-size:13px"
-                  onkeydown="if(event.key==='Enter') searchStudent();"
-                />
-                <button class="btn-sm" onclick="searchStudent()">
-                  <i class="fa-solid fa-search"></i>
-                </button>
-              </div>
-            </div>
+      <div class="chat-log" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Nội dung hội thoại">
+        <div class="msg bot">
+          <div class="msg-avatar"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bot"/></svg></div>
+          <div class="msg-bubble">
+            <p>Xin chào! Tôi có thể giúp bạn:</p>
+            <ul>
+              <li>Tra cứu thông tin và lịch sử vi phạm của học sinh</li>
+              <li>Xem thống kê vi phạm theo ngày, tuần, tháng</li>
+              <li>Tổng hợp báo cáo nhanh</li>
+            </ul>
+            <p>Bạn cần hỗ trợ gì?</p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
 
-    <!-- Mobile nav — nội dung được renderNav() inject -->
-    <nav class="mobile-nav" id="mobileNav"></nav>
+      <div class="chat-foot">
+        <button type="button" class="btn clear" onclick="clearChat()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg> Xóa hội thoại</button>
+        <form class="row" onsubmit="event.preventDefault(); sendMessage();">
+          <label class="sr-only" for="chatInput">Câu hỏi của bạn</label>
+          <input class="input" type="text" id="chatInput" maxlength="500" placeholder="Nhập câu hỏi…" autocomplete="off" />
+          <button type="submit" class="btn-icon" id="sendBtn" aria-label="Gửi câu hỏi"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-send"/></svg></button>
+        </form>
+      </div>
+    </section>
 
-    <script src="js/api.js"></script>
-    <script src="js/chatbot.js"></script>
-  </body>
+    <aside class="side" aria-label="Công cụ nhanh">
+      <section class="card">
+        <h2>Câu hỏi nhanh</h2>
+        <div class="quick" style="margin-top:12px">
+          <button type="button" onclick="quickAsk('Tổng kết vi phạm hôm nay')">Tổng kết hôm nay</button>
+          <button type="button" onclick="quickAsk('Học sinh nào vi phạm nhiều nhất tuần này?')">Vi phạm nhiều nhất</button>
+          <button type="button" onclick="quickAsk('Thống kê vi phạm theo loại')">Vi phạm theo loại</button>
+          <button type="button" onclick="quickAsk('Có bao nhiêu học sinh trong hệ thống?')">Tổng số học sinh</button>
+          <button type="button" onclick="quickAsk('Danh sách vi phạm gần đây nhất')">Vi phạm gần đây</button>
+          <button type="button" onclick="quickAsk('Tóm tắt báo cáo tháng này')">Báo cáo tháng</button>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Tra cứu học sinh</h2>
+        <form class="field lookup-field" style="margin:12px 0 0" onsubmit="event.preventDefault(); searchStudent();">
+          <label for="studentSearch">Tên hoặc mã học sinh</label>
+          <div class="lookup">
+            <input class="input" id="studentSearch" type="text" maxlength="100" autocomplete="off" />
+            <button type="submit" class="btn btn-primary" aria-label="Tra cứu"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></button>
+          </div>
+        </form>
+      </section>
+    </aside>
+  </div>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
+<script src="js/api.js"></script>
+<script src="js/chatbot.js"></script>
+</body>
 </html>
