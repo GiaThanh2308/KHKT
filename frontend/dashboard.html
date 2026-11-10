@@ -1,0 +1,143 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Tổng quan — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+
+<main class="page" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Tổng quan</h1><p id="todayLabel">Số liệu vi phạm của trường.</p></div>
+    <div class="export-bar">
+      <label>Từ ngày <input type="date" id="exFrom" /></label>
+      <label>Đến ngày <input type="date" id="exTo" /></label>
+      <button type="button" class="btn btn-primary" id="exBtn" onclick="exportExcel()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-sheet"/></svg> Xuất Excel</button>
+    </div>
+  </div>
+
+  <dl class="strip" aria-label="Số lượt vi phạm">
+    <div><dt>Hôm nay</dt><dd id="viol_today">—</dd></div>
+    <div><dt>Tuần này</dt><dd id="viol_week">—</dd></div>
+    <div><dt>Tháng này</dt><dd id="viol_month">—</dd></div>
+    <div><dt>Tổng cộng</dt><dd id="total_violations">—</dd></div>
+  </dl>
+
+  <div class="dash-grid">
+    <section class="card" aria-labelledby="h7">
+      <div class="card-head"><div><h2 id="h7">7 ngày gần nhất</h2><p class="sub">Số lượt vi phạm mỗi ngày. Cột đỏ là hôm nay.</p></div></div>
+      <ol class="cols" id="cols"><li class="empty">Đang tải…</li></ol>
+    </section>
+
+    <section class="card" aria-labelledby="htype">
+      <div class="card-head"><div><h2 id="htype">Loại vi phạm</h2><p class="sub">Xếp theo số lượt, từ trước đến nay.</p></div></div>
+      <ol class="ranks" id="vtype-list"><li class="empty">Đang tải…</li></ol>
+    </section>
+  </div>
+
+  <div class="dash-grid even">
+    <section class="card" aria-labelledby="htop">
+      <div class="card-head"><div><h2 id="htop">Vi phạm nhiều nhất</h2><p class="sub">Tháng này, 5 học sinh đứng đầu.</p></div>
+        <a class="btn" style="min-height:36px" href="students.html">Xem học sinh</a></div>
+      <ol class="top" id="top-violators"><li class="empty">Đang tải…</li></ol>
+    </section>
+
+    <section class="card" aria-labelledby="hfeed">
+      <div class="card-head"><div><h2 id="hfeed">Mới ghi gần đây</h2><p class="sub">6 lượt mới nhất.</p></div></div>
+      <ol class="feed" id="activity-feed"><li class="empty">Đang tải…</li></ol>
+    </section>
+  </div>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
+
+<script src="js/api.js"></script>
+<script>
+  requireAuth(); requireTeacher(); renderNav('dashboard');
+  const esc = escapeHtml;
+  const ini = n => (n || '?').trim().split(/\s+/).slice(-2).map(w => w[0]).join('').toUpperCase();
+  const get = async p => { const r = await apiFetch(p); if (!r.ok) throw new Error(p); return r.json(); };
+  const $ = id => document.getElementById(id);
+  const ago = iso => {
+    const d = new Date(iso && !/Z|\+/.test(iso) ? iso + 'Z' : iso), m = Math.max(0, Math.round((Date.now() - d) / 60000));
+    return m < 1 ? 'Vừa xong' : m < 60 ? m + ' phút trước' : m < 1440 ? Math.round(m / 60) + ' giờ trước' : Math.round(m / 1440) + ' ngày trước';
+  };
+  const empty = (title, sub) => `<li class="empty"><b>${title}</b>${sub || ''}</li>`;
+
+  async function loadStats() {
+    const d = await get('/stats/summary');
+    $('total_violations').textContent = d.total_violations; $('viol_today').textContent = d.today_violations;
+    $('viol_week').textContent = d.week_violations; $('viol_month').textContent = d.month_violations;
+    $('viol_today').classList.toggle('hot', d.today_violations > 0);
+  }
+
+  // Cột 7 ngày: danh sách <ol> thật, mỗi cột có chữ "ngày: số lượt" cho trình đọc màn hình
+  async function buildColumns() {
+    const d = await get('/stats/daily?days=7'), max = Math.max(1, ...d.map(x => x.count));
+    $('cols').innerHTML = d.map((x, i) => `<li class="${i === d.length - 1 ? 'today' : ''}">
+      <span class="v" aria-hidden="true">${x.count}</span><span class="bar" style="--h:${Math.round(x.count / max * 160)}px" aria-hidden="true"></span>
+      <span class="d" aria-hidden="true">${esc(x.date)}</span><span class="sr-only">${esc(x.date)}: ${x.count} vi phạm${i === d.length - 1 ? ' (hôm nay)' : ''}</span></li>`).join('');
+  }
+
+  async function buildTypes() {
+    const d = (await get('/stats/by-type')).sort((a, b) => b.count - a.count), list = $('vtype-list');
+    const total = d.reduce((s, v) => s + v.count, 0);
+    if (!total) { list.innerHTML = empty('Chưa có vi phạm nào', 'Dữ liệu sẽ hiện khi có lượt ghi đầu tiên.'); return; }
+    list.innerHTML = d.map(v => { const pct = Math.round(v.count / total * 100); return `<li>
+      <div class="row"><span class="name">${esc(v.type)}</span><span class="n">${v.count} <small>(${pct}%)</small></span></div>
+      <div class="track" aria-hidden="true"><b style="width:${pct}%"></b></div></li>`; }).join('');
+  }
+
+  async function buildTop() {
+    const d = await get('/stats/top-violators?limit=5'), ol = $('top-violators');
+    if (!d.length) { ol.innerHTML = empty('Chưa có dữ liệu'); return; }
+    ol.innerHTML = d.map((s, i) => `<li><span class="pos">${i + 1}</span>
+      <div class="who"><span class="avatar" aria-hidden="true">${esc(ini(s.full_name))}</span>
+      <div><strong>${esc(s.full_name)}</strong><small>${esc(s.student_code)} · ${esc(s.class_name)}</small></div></div>
+      <span class="badge red">${s.count} lần</span></li>`).join('');
+  }
+
+  async function buildFeed() {
+    const d = await get('/violations?limit=6'), ol = $('activity-feed');
+    if (!d.length) { ol.innerHTML = empty('Chưa có hoạt động'); return; }
+    ol.innerHTML = d.map(v => `<li><span class="avatar" aria-hidden="true">${esc(ini(v.student_name))}</span>
+      <div class="what"><b>${esc(v.student_name)}</b><small>${esc(v.class_name)} · ${esc(v.violation_type)}</small></div>
+      <time datetime="${esc(v.created_at)}">${ago(v.created_at)}</time></li>`).join('');
+  }
+
+  const ymd = d => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  async function exportExcel() {
+    const btn = $('exBtn'), from = $('exFrom').value, to = $('exTo').value;
+    if (from && to && to < from) { toast('Ngày kết thúc phải sau ngày bắt đầu', true); return; }
+    btn.disabled = true;
+    try {
+      const res = await apiFetch('/export/violations?' + new URLSearchParams({ ...(from && { from }), ...(to && { to }) }));
+      if (!res.ok) { toast((await res.json().catch(() => ({}))).detail || 'Không xuất được Excel', true); return; }
+      const m = /filename="?([^";]+)/.exec(res.headers.get('Content-Disposition') || '');
+      const a = Object.assign(document.createElement('a'), { href: URL.createObjectURL(await res.blob()), download: m ? m[1] : 'vi_pham.xlsx' });
+      document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+      toast('Đã xuất file Excel');
+    } catch { toast('Lỗi kết nối server', true); }
+    finally { btn.disabled = false; }
+  }
+
+  window.addEventListener('DOMContentLoaded', () => {
+    const now = new Date(), monday = new Date(now); monday.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    $('exFrom').value = ymd(monday); $('exTo').value = ymd(now); // mặc định: tuần này
+    if (!isTeacher()) return;
+    const days = ['Chủ nhật', 'Thứ hai', 'Thứ ba', 'Thứ tư', 'Thứ năm', 'Thứ sáu', 'Thứ bảy'];
+    $('todayLabel').textContent = `${days[now.getDay()]}, ${now.getDate()} tháng ${now.getMonth() + 1} năm ${now.getFullYear()}`;
+    [loadStats, buildColumns, buildTypes, buildTop, buildFeed].forEach(fn => fn().catch(e => console.warn(e)));
+  });
+</script>
+</body>
+</html>

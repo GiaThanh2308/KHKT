@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Nhận diện — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body class="page-rec">
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+<main class="page page-rec" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Nhận diện</h1><p>Chụp khuôn mặt để ghi lỗi nề nếp.</p></div>
+  </div>
+
+  <div class="rec">
+    <div class="cam" id="stage" data-state="idle">
+      <video id="video" autoplay playsinline muted></video>
+      <img class="freeze" id="freezeImg" alt="Khung hình vừa chụp" />
+
+      <div class="cam-idle">
+        <svg class="i" aria-hidden="true" focusable="false"><use href="#i-camera"/></svg>
+        <b>Camera đang tắt</b>
+        <small>Bật camera hoặc chọn một ảnh có sẵn.</small>
+        <div class="acts">
+          <button type="button" class="btn btn-primary" onclick="startCamera()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-video"/></svg> Bật camera</button>
+          <label class="btn" for="imageInput" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-image"/></svg> Chọn ảnh</label>
+        </div>
+      </div>
+      <input type="file" id="imageInput" accept="image/*" class="sr-only" onchange="uploadImage()" />
+
+      <div class="cam-hud" aria-hidden="true">
+        <div class="cam-frame">
+          <i class="tl"></i><i class="tr"></i><i class="bl"></i><i class="br"></i>
+          <div class="sweep"></div>
+          <div class="cam-badge" id="camBadge"></div>
+        </div>
+      </div>
+
+      <div class="cam-status" role="status" aria-live="polite"><span class="dot" aria-hidden="true"></span><span id="statusText">Đưa khuôn mặt vào khung</span></div>
+      <button type="button" class="ctl cam-power" onclick="stopCamera()" aria-label="Tắt camera" title="Tắt camera"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-power"/></svg></button>
+
+      <div class="cam-controls">
+        <label class="ctl" for="imageInput" title="Chọn ảnh" aria-label="Chọn ảnh có sẵn" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-image"/></svg></label>
+        <button type="button" class="shutter" id="shutter" onclick="captureAndRecognize()" aria-label="Chụp và nhận diện"><span></span></button>
+        <button type="button" class="ctl" onclick="flipCamera()" aria-label="Đổi camera trước/sau" title="Đổi camera"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-flip"/></svg></button>
+      </div>
+    </div>
+
+    <section class="slip" aria-labelledby="slipTitle">
+      <h2 class="slip-title" id="slipTitle">Phiếu ghi lỗi</h2>
+      <div class="slip-body" id="studentProfile" aria-live="polite">
+        <div class="res-empty"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-user"/></svg><p>Chưa có học sinh nào</p><small>Chụp một khuôn mặt, kết quả sẽ hiện ở đây.</small></div>
+      </div>
+    </section>
+  </div>
+
+  <section class="card recent recent-card" aria-labelledby="recentTitle">
+    <div class="card-head"><h2 id="recentTitle">Vi phạm gần đây</h2></div>
+    <div id="recentViolations"><div class="empty"><small>Đang tải…</small></div></div>
+  </section>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
+<canvas id="canvas" hidden></canvas>
+
+<script src="js/api.js"></script>
+<script src="js/face.js"></script>
+</body>
+</html>

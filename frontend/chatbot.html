@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Chatbot AI — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<a class="skip" href="#main">Bỏ qua điều hướng</a>
+<header class="appbar" id="appbar"></header>
+<main class="page" id="main" tabindex="-1">
+  <div class="page-head">
+    <div><h1>Chatbot AI</h1><p>Hỏi về học sinh, vi phạm và thống kê.</p></div>
+  </div>
+
+  <div class="chat">
+    <section class="card chat-main" aria-label="Hội thoại">
+      <div class="chat-top">
+        <span class="msg-avatar"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bot"/></svg></span>
+        <div><b>Trợ lý AI School</b><small>Trả lời dựa trên dữ liệu của trường</small></div>
+        <span class="badge" id="contextBadge">Đang tải…</span>
+      </div>
+
+      <div class="chat-log" id="chatMessages" role="log" aria-live="polite" aria-relevant="additions" tabindex="0" aria-label="Nội dung hội thoại">
+        <div class="msg bot">
+          <div class="msg-avatar"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-bot"/></svg></div>
+          <div class="msg-bubble">
+            <p>Xin chào! Tôi có thể giúp bạn:</p>
+            <ul>
+              <li>Tra cứu thông tin và lịch sử vi phạm của học sinh</li>
+              <li>Xem thống kê vi phạm theo ngày, tuần, tháng</li>
+              <li>Tổng hợp báo cáo nhanh</li>
+            </ul>
+            <p>Bạn cần hỗ trợ gì?</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="chat-foot">
+        <button type="button" class="btn clear" onclick="clearChat()"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-trash"/></svg> Xóa hội thoại</button>
+        <form class="row" onsubmit="event.preventDefault(); sendMessage();">
+          <label class="sr-only" for="chatInput">Câu hỏi của bạn</label>
+          <input class="input" type="text" id="chatInput" maxlength="500" placeholder="Nhập câu hỏi…" autocomplete="off" />
+          <button type="submit" class="btn-icon" id="sendBtn" aria-label="Gửi câu hỏi"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-send"/></svg></button>
+        </form>
+      </div>
+    </section>
+
+    <aside class="side" aria-label="Công cụ nhanh">
+      <section class="card">
+        <h2>Câu hỏi nhanh</h2>
+        <div class="quick" style="margin-top:12px">
+          <button type="button" onclick="quickAsk('Tổng kết vi phạm hôm nay')">Tổng kết hôm nay</button>
+          <button type="button" onclick="quickAsk('Học sinh nào vi phạm nhiều nhất tuần này?')">Vi phạm nhiều nhất</button>
+          <button type="button" onclick="quickAsk('Thống kê vi phạm theo loại')">Vi phạm theo loại</button>
+          <button type="button" onclick="quickAsk('Có bao nhiêu học sinh trong hệ thống?')">Tổng số học sinh</button>
+          <button type="button" onclick="quickAsk('Danh sách vi phạm gần đây nhất')">Vi phạm gần đây</button>
+          <button type="button" onclick="quickAsk('Tóm tắt báo cáo tháng này')">Báo cáo tháng</button>
+        </div>
+      </section>
+      <section class="card">
+        <h2>Tra cứu học sinh</h2>
+        <form class="field lookup-field" style="margin:12px 0 0" onsubmit="event.preventDefault(); searchStudent();">
+          <label for="studentSearch">Tên hoặc mã học sinh</label>
+          <div class="lookup">
+            <input class="input" id="studentSearch" type="text" maxlength="100" autocomplete="off" />
+            <button type="submit" class="btn btn-primary" aria-label="Tra cứu"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-search"/></svg></button>
+          </div>
+        </form>
+      </section>
+    </aside>
+  </div>
+</main>
+<nav class="tabbar" id="mobileNav"></nav>
+<script src="js/api.js"></script>
+<script src="js/chatbot.js"></script>
+</body>
+</html>
