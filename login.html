@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="color-scheme" content="light dark" />
+  <title>Đăng nhập — AI School</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&family=Newsreader:opsz,wght@6..72,500;6..72,600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/app.css" />
+  <script src="js/theme.js"></script>
+  <script src="js/icons.js"></script>
+</head>
+<body>
+<main class="login">
+  <section class="login-art" aria-hidden="true">
+    <div class="login-slider">
+      <div class="slide active"><img src="images/truong.jpg" alt="" onerror="this.remove()" /></div>
+      <div class="slide"><img src="images/sk.jpg" alt="" onerror="this.remove()" /></div>
+    </div>
+    <div class="login-art-text">
+      <div class="brand"><svg viewBox="0 0 32 32" width="30" height="30"><rect width="32" height="32" rx="8" fill="#fff"/><path d="M10 7v18" stroke="#bf1230" stroke-width="2" stroke-linecap="round"/><path d="M15 11h9M15 16h9M15 21h6" stroke="#1b3aa8" stroke-width="2" stroke-linecap="round"/></svg><span>AI School</span></div>
+      <p>Ghi nhận nề nếp ngay tại cổng trường, bằng một lần chụp.</p>
+    </div>
+  </section>
+
+  <section class="login-form login-ruled">
+    <form class="login-card" id="loginForm" novalidate onsubmit="event.preventDefault(); login();">
+      <div class="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--primary)"/><path d="M10 7v18" stroke="#ff8a9d" stroke-width="2" stroke-linecap="round"/><path d="M15 11h9M15 16h9M15 21h6" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg><span>AI School</span></div>
+      <h1>Đăng nhập</h1>
+      <p class="lead">Dùng tài khoản do nhà trường cấp.</p>
+
+      <div class="field">
+        <label for="username">Tên đăng nhập</label>
+        <div class="with-icon">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="#i-user"/></svg>
+          <input class="input" type="text" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" required />
+        </div>
+      </div>
+      <div class="field">
+        <label for="password">Mật khẩu</label>
+        <div class="with-icon">
+          <svg class="i" aria-hidden="true" focusable="false"><use href="#i-lock"/></svg>
+          <input class="input" type="password" id="password" name="password" autocomplete="current-password" required />
+          <button type="button" class="btn-icon pw-toggle" aria-label="Hiện mật khẩu" aria-pressed="false"
+            onclick="const p=document.getElementById('password'),h=p.type==='password';p.type=h?'text':'password';this.setAttribute('aria-pressed',h);this.setAttribute('aria-label',h?'Ẩn mật khẩu':'Hiện mật khẩu');this.querySelector('use').setAttribute('href',h?'#i-eye-off':'#i-eye')"><svg class="i" aria-hidden="true" focusable="false"><use href="#i-eye"/></svg></button>
+        </div>
+      </div>
+      <p id="loginMessage" class="error-msg" role="alert"></p>
+      <button type="submit" id="loginBtn" class="btn btn-primary btn-block">Đăng nhập</button>
+    </form>
+  </section>
+</main>
+<script src="js/api.js"></script>
+<script src="js/login.js"></script>
+</body>
+</html>
